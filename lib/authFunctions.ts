@@ -3,7 +3,6 @@ import jwt from "jsonwebtoken";
 import SessionMethod from "../enums/SessionMethod";
 import bcrypt from "bcrypt";
 import { NextRequest, NextResponse } from "next/server";
-import { get } from "http";
 
 export async function tradSignup(req: NextRequest) {
   // get inputs from request body
@@ -91,8 +90,61 @@ export async function googleAuthSignIn(req: NextRequest) {
 
   return createUserSession(
     { id: user.id, email: user.email },
-    SessionMethod.SIGN_IN
+    SessionMethod.SIGN_IN_GOOGLE
   );
+}
+
+export async function linkedinAuthSignIn(req: NextRequest) {
+  const url = new URL(req.url);
+  const code = url.searchParams.get("code");
+  // const state = url.searchParams.get("state");
+
+  if (!code) return NextResponse.json({ error: "Missing code" }, { status: 400 });
+
+  // Exchange code for access token
+  const tokenRes = await fetch("https://www.linkedin.com/oauth/v2/accessToken", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: process.env.LINKEDIN_REDIRECT_URI!,
+      client_id: process.env.LINKEDIN_CLIENT_ID!,
+      client_secret: process.env.LINKEDIN_CLIENT_SECRET!
+    })
+  });
+
+  const tokenData = await tokenRes.json();
+  const accessToken = tokenData.access_token;
+
+  if (!accessToken)
+    return NextResponse.json({ error: "Token exchange failed" }, { status: 400 });
+
+  // Fetch user info via OIDC
+  const infoRes = await fetch("https://api.linkedin.com/v2/userinfo", {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+
+  const userInfo = await infoRes.json();
+
+  // userInfo example:
+  // {
+  //   sub: "linkedin-member-id",
+  //   name: "John Doe",
+  //   email: "john@example.com",
+  //   picture: "..."
+  // }
+
+  console.log('LinkedIn User Info:', userInfo);
+
+  // 3️⃣ Create/find user in your DB
+  // TODO: your logic here
+  // const user = await upsertUser(userInfo);
+
+  // 4️⃣ Create a login session
+  // TODO: set cookie / JWT etc.
+
+  return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/?success=true&provider=linkedin`);
 }
 
 export async function tradLogin(req: NextRequest) {
@@ -172,7 +224,7 @@ function getResponse(
         { message: "Logged out successfully" },
         { status: 200 }
       );
-    case SessionMethod.SIGN_IN:
+    case SessionMethod.SIGN_IN_GOOGLE:
       // this case represents OAuth sign in with google
       // TODO: this is temporary redirect to home page, can be changed later
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/?success=true&provider=google`);
