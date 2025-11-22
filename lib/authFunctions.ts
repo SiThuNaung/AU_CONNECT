@@ -1,8 +1,10 @@
-import prisma from "../lib/prisma";
-import jwt from "jsonwebtoken";
-import SessionMethod from "../enums/SessionMethod";
-import bcrypt from "bcrypt";
 import { NextRequest, NextResponse } from "next/server";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+
+import prisma from "../lib/prisma";
+import { COOKIE_EXPIRATION_TIME } from "./constants";
+import SessionMethod from "../enums/SessionMethod";
 
 export async function tradSignup(req: NextRequest) {
   // get inputs from request body
@@ -62,7 +64,7 @@ export async function googleAuthSignIn(req: NextRequest) {
       client_secret: process.env.GOOGLE_CLIENT_SECRET!,
       code,
       grant_type: "authorization_code",
-      redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/google/callback`,
+      redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
     }),
   });
 
@@ -85,6 +87,12 @@ export async function googleAuthSignIn(req: NextRequest) {
         email: profile.email,
         googleId: profile.sub,
       },
+    });
+  } else {
+    // update existing user with Google ID
+    user = await prisma.user.update({
+      where: { email: profile.email },
+      data: { googleId: profile.sub },
     });
   }
 
@@ -120,30 +128,39 @@ export async function linkedinAuthSignIn(req: NextRequest) {
   if (!accessToken)
     return NextResponse.json({ error: "Token exchange failed" }, { status: 400 });
 
-  // Fetch user info via OIDC
+  // fetch user info via OIDC
   const infoRes = await fetch("https://api.linkedin.com/v2/userinfo", {
     headers: { Authorization: `Bearer ${accessToken}` }
   });
 
   const userInfo = await infoRes.json();
 
-  // userInfo example:
-  // {
-  //   sub: "linkedin-member-id",
-  //   name: "John Doe",
-  //   email: "john@example.com",
-  //   picture: "..."
-  // }
+  // console.log('LinkedIn User Info:', userInfo);
 
-  console.log('LinkedIn User Info:', userInfo);
+  // check if user exists
+  let user = await checkExistUser(userInfo.email);
 
-  // 3️⃣ Create/find user in your DB
-  // TODO: your logic here
-  // const user = await upsertUser(userInfo);
+  // if user does not exist create new user record
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email: userInfo.email,
+        linkedinId: userInfo.sub,
+      },
+    });
+  } else {
+    // update existing user with LinkedIn ID
+    user = await prisma.user.update({
+      where: { email: userInfo.email },
+      data: { linkedinId: userInfo.sub },
+    });
+  }
 
-  // 4️⃣ Create a login session
-  // TODO: set cookie / JWT etc.
-
+  // Create a login session
+  createUserSession(
+    { id: user.id, email: user.email },
+    SessionMethod.SIGN_IN_LINKEDIN
+  );
   return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/?success=true&provider=linkedin`);
 }
 
@@ -190,7 +207,7 @@ export function createUserSession(
   const token = jwt.sign(
     { userId: user.id, email: user.email },
     process.env.JWT_SECRET!,
-    { expiresIn: "7d" }
+    { expiresIn: COOKIE_EXPIRATION_TIME }
   );
 
   const response = getResponse(user, method);
@@ -228,6 +245,10 @@ function getResponse(
       // this case represents OAuth sign in with google
       // TODO: this is temporary redirect to home page, can be changed later
       return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/?success=true&provider=google`);
+    case SessionMethod.SIGN_IN_LINKEDIN:
+      // this case represents OAuth sign in with linkedin
+      // TODO: this is temporary redirect to home page, can be changed later
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/?success=true&provider=linkedin`);
     case SessionMethod.SIGN_UP:
       return NextResponse.json(
         { message: "Signed up successfully", user },

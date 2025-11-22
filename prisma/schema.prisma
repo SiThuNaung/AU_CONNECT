@@ -19,6 +19,8 @@ model User {
   email     String   @unique
   password  String?  
   googleId  String?  @unique
+  linkedinId String? @unique
+  profilePic String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
