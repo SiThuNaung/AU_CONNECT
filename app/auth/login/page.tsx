@@ -85,43 +85,37 @@ export default function LoginPage() {
     }
   }
 
-  return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Left side - Hero section with image */}
-      <div className="relative w-1/2 hidden lg:flex items-end overflow-hidden">
-        {/* Background Image */}
-        <Image
-          src="/au-bg.png"
-          alt="AU background"
-          fill
-          className="object-cover"
-        />
+return (
+  <div className="flex flex-col lg:flex-row h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    {/* Left side - Hero section with image */}
+    <div className="relative w-full lg:w-1/2 h-64 sm:h-80 lg:h-full flex items-end overflow-hidden">
+      <Image
+        src="/au-bg.png"
+        alt="AU background"
+        fill
+        className="object-cover"
+      />
 
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20"></div>
 
-        {/* Text Content at Bottom */}
-        <div className="relative z-10 text-white p-12 pb-16 w-full">
-          <div className="flex items-center gap-2 mb-4">
-            {/* <Sparkles className="w-6 h-6" /> */}
-            <span className="text-sm font-semibold tracking-wider uppercase opacity-90">
-              AU Connect
-            </span>
-          </div>
+      <div className="relative z-10 text-white p-6 sm:p-8 lg:p-12 pb-10 lg:pb-16 w-full">
+        <span className="text-xs sm:text-sm font-semibold tracking-wider uppercase opacity-90">
+          AU Connect
+        </span>
 
-          <h1 className="text-5xl font-bold mb-4 leading-tight">
-            Welcome Back
-          </h1>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 lg:mb-4 leading-tight">
+          Welcome Back
+        </h1>
 
-          <p className="text-lg text-gray-200 leading-relaxed mb-6 max-w-md">
-            Connect, collaborate, and grow with your fellow AU students. Your
-            community awaits.
-          </p>
-        </div>
+        <p className="hidden sm:block text-sm sm:text-base lg:text-lg text-gray-200 leading-relaxed max-w-md">
+          Connect, collaborate, and grow with your fellow AU students. Your
+          community awaits.
+        </p>
       </div>
+    </div>
 
-      {/* Right side - Login form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+    {/* Right side - Login form */}
+    <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-8">
         <div className="w-full max-w-md">
           {/* Logo section */}
           <div className="text-center mb-8">
