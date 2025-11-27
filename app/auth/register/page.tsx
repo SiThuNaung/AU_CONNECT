@@ -3,105 +3,38 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Link from "next/link";
-import { Sparkle, ArrowRight } from "lucide-react";
 
 import Provider from "@/enums/Provider";
 import {
   GOOGLE_AUTH_DIRECT_PATH,
   LINKEDIN_AUTH_DIRECT_PATH,
-  LOGIN_PAGE_PATH,
-  ONBOARD_PAGE_PATH,
-  SIGNUP_PATH,
 } from "@/lib/constants";
-
-/*
- * TODO:
- * - add button for linkedin sign in (Done)
- * - add loading effects and error messages (use the states defined)
- */
 
 export default function SignUpPage() {
   const router = useRouter();
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
-  });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
   function handleSignin(provider: Provider) {
-    switch (provider) {
-      case Provider.GOOGLE:
-        router.push(GOOGLE_AUTH_DIRECT_PATH);
-        break;
-      case Provider.LINKEDIN:
-        router.push(LINKEDIN_AUTH_DIRECT_PATH);
-        break;
-    }
-  }
-  // In your SignUpPage component
-
-  const handleSignup = async () => {
-    // Validation
-    if (!form.email) {
-      setErrorMsg("Please enter your email.");
-      return;
-    }
-
-    if (!form.password) {
-      setErrorMsg("Please enter your password.");
-      return;
-    }
-
-    if (!form.confirmPassword) {
-      setErrorMsg("Please confirm your password.");
-      return;
-    }
-
-    if (form.password !== form.confirmPassword) {
-      setErrorMsg("Passwords do not match.");
-      return;
-    }
-
-    setLoading(true);
-    setErrorMsg("");
-
     try {
-      const res = await fetch(SIGNUP_PATH, {
-        // You'll need to add this to your constants
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: form.email,
-          password: form.password,
-        }),
-      });
-
-      if (res.ok) {
-        router.push(ONBOARD_PAGE_PATH);
-      } else {
-        const data = await res.json();
-        setErrorMsg(data.message || "Signup failed. Please try again.");
+      switch (provider) {
+        case Provider.GOOGLE:
+          setLoading(true);
+          router.push(GOOGLE_AUTH_DIRECT_PATH);
+          break;
+        case Provider.LINKEDIN:
+          setLoading(true);
+          router.push(LINKEDIN_AUTH_DIRECT_PATH);
+          break;
       }
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMsg(error.message);
-      } else {
-        setErrorMsg("An error occurred during signup. Please try again.");
-      }
-    } finally {
       setLoading(false);
+      setErrorMsg(error instanceof Error ? error.message : "An error occured with signup. please try again.");
     }
-  };
+  }
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="flex flex-col lg:flex-row h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Left side - Hero section with image */}
       <div className="relative w-full lg:w-1/2 h-64 sm:h-80 lg:h-full flex items-end overflow-hidden">
         {/* Background Image */}
@@ -113,7 +46,7 @@ export default function SignUpPage() {
         />
 
         {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/45 to-black/10" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/75 via-black/45 to-black/10" />
 
         {/* Text Content */}
         <div className="relative z-10 text-white w-full p-6 sm:p-8 lg:p-12 pb-8 lg:pb-16">
@@ -197,7 +130,7 @@ export default function SignUpPage() {
             <button
               onClick={() => handleSignin(Provider.MICROSOFT)}
               disabled={loading}
-              className="group relative flex items-center justify-center gap-3 w-full py-3.5 rounded-xl bg-gradient-to-r from-gray-800 to-gray-900 text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:from-gray-900 hover:to-black hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative flex items-center justify-center gap-3 w-full py-3.5 rounded-xl bg-linear-to-r from-gray-800 to-gray-900 text-white font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:from-gray-900 hover:to-black hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Image
                 src="/microsoft-icon.png"
@@ -209,27 +142,6 @@ export default function SignUpPage() {
               <div className="absolute inset-0 rounded-xl bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </button>
           </div>
-
-          {/* Divider */}
-          <div className="relative mb-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-gray-500">
-                Already have an account?
-              </span>
-            </div>
-          </div>
-
-          {/* Login link */}
-          <Link
-            href={LOGIN_PAGE_PATH}
-            className="flex items-center justify-center w-full py-3.5 rounded-xl border-2 border-gray-200 text-gray-700 font-medium hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300 group"
-          >
-            Sign in to your account
-            <ArrowRight className="inline-block ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
 
           {/* Footer */}
           <p className="text-center text-xs text-gray-500 mt-8">

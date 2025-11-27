@@ -1,18 +1,16 @@
 export const BASE_API_PATH = '/api/connect/v1';
 
 export const MAIN_PAGE_PATH = '/';
-export const LOGIN_PAGE_PATH = '/auth/login'
-export const SIGNUP_PAGE_PATH = '/auth/signup'
+export const SIGNIN_PAGE_PATH = '/auth/register'
 export const ONBOARD_PAGE_PATH = '/auth/onboarding'
 export const CONNECT_PAGE_PATH = '/connect'
 export const POST_PAGE_PATH = '/post'
 export const PROFILE_PAGE_PATH = '/profile'
 export const NOTIFICATION_PAGE_PATH = '/notifications'
 
-export const HEADER_HIDDEN_PAGES = [LOGIN_PAGE_PATH, SIGNUP_PAGE_PATH, ONBOARD_PAGE_PATH]
+export const HEADER_HIDDEN_PAGES = [SIGNIN_PAGE_PATH, ONBOARD_PAGE_PATH]
 
 // api routes for auth
-export const LOGIN_PATH = BASE_API_PATH + '/auth/login';
 export const SIGNUP_PATH = BASE_API_PATH + '/auth/signup';
 export const LOGOUT_PATH = BASE_API_PATH + '/auth/logout';
 

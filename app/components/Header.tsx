@@ -8,13 +8,12 @@ import { usePathname } from "next/navigation";
 
 import {
   CONNECT_PAGE_PATH,
-  LOGIN_PAGE_PATH,
   MAIN_PAGE_PATH,
   NOTIFICATION_PAGE_PATH,
+  SIGNIN_PAGE_PATH,
   ONBOARD_PAGE_PATH,
   POST_PAGE_PATH,
   PROFILE_PAGE_PATH,
-  SIGNUP_PAGE_PATH,
 } from "@/lib/constants";
 
 const mockUser = {
@@ -29,8 +28,7 @@ export default function Header() {
   const [currentPage, setCurrentPage] = useState(MAIN_PAGE_PATH);
   const pathName = usePathname();
   const hidden = [
-    LOGIN_PAGE_PATH,
-    SIGNUP_PAGE_PATH,
+    SIGNIN_PAGE_PATH,
     ONBOARD_PAGE_PATH,
   ].includes(pathName);
 
