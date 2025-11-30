@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { Home, UserPlus, PlusCircle, Bell, Search, Menu, X } from "lucide-react";
+import { Home, UserPlus, PlusCircle, Bell, Search, Menu, X, MessageCircleMore } from "lucide-react";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import {
@@ -10,7 +10,7 @@ import {
   NOTIFICATION_PAGE_PATH,
   SIGNIN_PAGE_PATH,
   ONBOARD_PAGE_PATH,
-  POST_PAGE_PATH,
+  MESSAGES_PAGE_PATH,
   // PROFILE_PAGE_PATH,
 } from "@/lib/constants";
 
@@ -80,14 +80,14 @@ export default function Header() {
               <span className="text-xs">Connect</span>
             </Link>
             <Link
-              href={POST_PAGE_PATH}
-              onClick={() => setCurrentPage(POST_PAGE_PATH)}
+              href={MESSAGES_PAGE_PATH}
+              onClick={() => setCurrentPage(MESSAGES_PAGE_PATH)}
               className={`flex flex-col items-center gap-1 ${
-                currentPage == POST_PAGE_PATH ? "text-red-400" : "text-gray-600"
+                currentPage == MESSAGES_PAGE_PATH ? "text-red-400" : "text-gray-600"
               } hover:text-red-600`}
             >
-              <PlusCircle className="w-5 h-5" />
-              <span className="text-xs">Post</span>
+              <MessageCircleMore className="w-5 h-5" />
+              <span className="text-xs">Messages</span>
             </Link>
             <Link
               href={NOTIFICATION_PAGE_PATH}
@@ -159,10 +159,10 @@ export default function Header() {
                 <span className="font-medium">Connect</span>
               </Link>
               <Link
-                href={POST_PAGE_PATH}
-                onClick={() => handleNavClick(POST_PAGE_PATH)}
+                href={MESSAGES_PAGE_PATH}
+                onClick={() => handleNavClick(MESSAGES_PAGE_PATH)}
                 className={`flex items-center gap-3 px-4 py-2 rounded-lg ${
-                  currentPage == POST_PAGE_PATH ? "bg-red-50 text-red-400" : "text-gray-600"
+                  currentPage == MESSAGES_PAGE_PATH ? "bg-red-50 text-red-400" : "text-gray-600"
                 } hover:bg-red-50 hover:text-red-600`}
               >
                 <PlusCircle className="w-5 h-5" />

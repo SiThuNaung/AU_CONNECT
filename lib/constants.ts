@@ -9,7 +9,7 @@ export const MAIN_PAGE_PATH = '/';
 export const SIGNIN_PAGE_PATH = '/auth/register'
 export const ONBOARD_PAGE_PATH = '/auth/onboarding'
 export const CONNECT_PAGE_PATH = '/connect'
-export const POST_PAGE_PATH = '/post'
+export const MESSAGES_PAGE_PATH = '/messages'
 export const PROFILE_PAGE_PATH = '/profile'
 export const NOTIFICATION_PAGE_PATH = '/notifications'
 

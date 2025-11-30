@@ -1,9 +1,10 @@
-"use client";
-import { useState } from "react";
-import Image from "next/image";
+'use client'
 
-export default function CreatePostPage() {
-  const [isOpen, setIsOpen] = useState(true);
+import { useState } from 'react'
+import Image from 'next/image'
+import CreatePostModalPropTypes from '@/types/CreatePostModalPropTypes';
+
+export default function CreatePostModal( {isOpen, setIsOpen}: CreatePostModalPropTypes ) {
   const [selectedVisibility, setSelectedVisibility] = useState("everyone");
   const [showDropdown, setShowDropdown] = useState(false);
   const [postContent, setPostContent] = useState("");
@@ -68,7 +69,7 @@ export default function CreatePostPage() {
         <div className="flex items-start gap-4 px-6 pt-6 pb-4 border-b border-neutral-100">
           {/* Avatar with gradient ring */}
           <div className="relative">
-            <div className="h-14 w-14 rounded-2xl overflow-hidden bg-gradient-to-br from-white-400 to-white-500 p-0.5">
+            <div className="h-14 w-14 rounded-2xl overflow-hidden bg-linear-to-br from-white-400 to-white-500 p-0.5">
               <div className="h-full w-full rounded-2xl overflow-hidden bg-white relative">
                 <Image
                   src="/au-connect-logo.png"
@@ -90,7 +91,7 @@ export default function CreatePostPage() {
             <div className="relative mt-2">
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="inline-flex items-center gap-2 rounded-xl border border-neutral-300 bg-gradient-to-br from-neutral-50 to-neutral-100 px-3 py-2 text-xs font-semibold text-neutral-700 hover:from-neutral-100 hover:to-neutral-200 transition-all duration-200 hover:shadow-md"
+                className="inline-flex items-center gap-2 rounded-xl border border-neutral-300 bg-linear-to-br from-neutral-50 to-neutral-100 px-3 py-2 text-xs font-semibold text-neutral-700 hover:from-neutral-100 hover:to-neutral-200 transition-all duration-200 hover:shadow-md"
               >
                 {currentVisibility?.icon}
                 {currentVisibility?.label}
@@ -119,9 +120,9 @@ export default function CreatePostPage() {
                         setSelectedVisibility(option.id);
                         setShowDropdown(false);
                       }}
-                      className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200 ${
+                      className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-linear-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-200 ${
                         selectedVisibility === option.id
-                          ? "bg-gradient-to-r from-blue-50 to-purple-50"
+                          ? "bg-linear-to-r from-blue-50 to-purple-50"
                           : ""
                       }`}
                     >
@@ -196,7 +197,7 @@ export default function CreatePostPage() {
 
         {/* Attachment row */}
         <div className="px-6 pb-4">
-          <div className="flex items-center gap-2 text-neutral-500 text-sm bg-gradient-to-r from-neutral-50 to-neutral-100 rounded-2xl p-4 border border-neutral-200">
+          <div className="flex items-center gap-2 text-neutral-500 text-sm bg-linear-to-r from-neutral-50 to-neutral-100 rounded-2xl p-4 border border-neutral-200">
             <span className="text-xs font-semibold text-neutral-600 mr-2">
               Add to your post
             </span>
@@ -262,7 +263,7 @@ export default function CreatePostPage() {
         </div>
 
         {/* Footer buttons */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-100 bg-gradient-to-br from-neutral-50 to-white">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-100 bg-linear-to-br from-neutral-50 to-white">
           <div className="text-xs text-neutral-500">
             Posting to{" "}
             <span className="font-semibold text-neutral-700">AU Connect</span>
@@ -279,7 +280,7 @@ export default function CreatePostPage() {
               disabled={!postContent.trim()}
               className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all duration-300 ${
                 postContent.trim()
-                  ? "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:shadow-xl hover:scale-105"
+                  ? "bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 hover:shadow-xl hover:scale-105"
                   : "bg-neutral-300 cursor-not-allowed"
               }`}
             >

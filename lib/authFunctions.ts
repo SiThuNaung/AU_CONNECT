@@ -27,7 +27,6 @@ import {
   MICROSOFT_CLIENT_ID,
   MICROSOFT_CLIENT_SECRET,
   MICROSOFT_REDIRECT_URI,
-  NEXT_PUBLIC_BASE_URL,
   NODE_ENV,
 } from "./env";
 
@@ -161,15 +160,9 @@ export async function linkedinAuthSignIn(req: NextRequest) {
 export async function azurezAdAuthSignIn(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const code = searchParams.get("code");
-  const state = searchParams.get("state");
 
   // verify state to prevent CSRF
-  const storedState = req.cookies.get(OAUTH_STATE_COOKIE)?.value;
-  if (!state || state !== storedState) {
-    return NextResponse.redirect(
-      `${SIGNIN_PAGE_PATH}?error=Invalid state parameter`
-    );
-  }
+  verifyOauthState(req.nextUrl, req);
 
   if (!code) {
     return NextResponse.redirect(
@@ -249,7 +242,7 @@ export async function azurezAdAuthSignIn(req: NextRequest) {
   } catch (error) {
     console.error("Microsoft OAuth callback error:", error);
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/login?error=${encodeURIComponent(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/register?error=${encodeURIComponent(
         error instanceof Error ? error.message : "Authentication failed"
       )}`
     );
