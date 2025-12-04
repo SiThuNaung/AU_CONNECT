@@ -1,11 +1,12 @@
 "use client";
+import React from "react";
 
 export default function SectionCard({
   title,
   children,
 }: {
   title: string;
-  children: any;
+  children: React.ReactNode;
 }) {
   return (
     <div className="bg-white rounded-lg border p-4">
