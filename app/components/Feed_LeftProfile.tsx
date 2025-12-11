@@ -56,6 +56,7 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
             onClick={handleProfileClick}
 
             className="relative w-20 h-20 mb-3 cursor-pointer transition-transform duration-200 active:scale-95 hover:scale-105"
+
           >
 
             {user?.profilePic ? (

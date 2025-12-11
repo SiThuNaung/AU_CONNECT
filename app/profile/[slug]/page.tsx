@@ -51,8 +51,16 @@ export default async function ProfilePage(props: { params: Promise<{ slug: strin
     title: user.title || "",
     about: user.about || "",
     location: user.location || "",
-    coverPhoto: user.coverPhoto || "/default_cover.jpg",
-    profilePic: user.profilePic || "/default_profile.jpg",
+    coverPhoto:
+      user.coverPhoto && user.coverPhoto.trim() !== ""
+        ? user.coverPhoto
+        : "/default_cover.jpg",
+
+    profilePic:
+      user.profilePic && user.profilePic.trim() !== ""
+        ? user.profilePic
+        : "/default_profile.jpg",
+
     createdAt: user.createdAt?.toISOString?.() ?? undefined,
 
     phoneNo: user.phoneNo || "",

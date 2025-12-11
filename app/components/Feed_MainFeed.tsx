@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Image as ImageIcon } from "lucide-react";
+import { BookOpen, Image as ImageIcon, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
 
@@ -10,6 +10,7 @@ import { MainFeedPropTypes } from "@/types/FeedPagePropTypes";
 
 export default function MainFeed({ user, posts, loading }: MainFeedPropTypes) {
     const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
+    const [selectedPostType, setSelectedPostType] = useState("discussion");
 
   return (
     <div className="lg:col-span-6 md:col-span-7 space-y-4">
@@ -31,7 +32,11 @@ export default function MainFeed({ user, posts, loading }: MainFeedPropTypes) {
           </button>
         </div>
 
-        <div className="flex justify-center gap-4 pl-13">
+        <div className="flex justify-evenly gap-4 pl-13">
+          <button className="flex items-center gap-2 text-gray-600 hover:text-red-600">
+            <MessageSquare className="w-5 h-5" />
+            <span>Discussion</span>
+          </button>
           <button className="flex items-center gap-2 text-gray-600 hover:text-red-600">
             <ImageIcon className="w-5 h-5" />
             <span>Media</span>

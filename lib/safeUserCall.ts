@@ -19,6 +19,16 @@ export const safeUserSelect = {
     select: { id: true, school: true, degree: true, period: true },
   },
   posts: {
-    select: { id: true, content: true, image: true, createdAt: true },
+  select: {
+    id: true,
+    content: true,
+    title: true,
+    postType: true,
+    visibility: true,
+    profilePic: true,
+    username: true,
+    createdAt: true,
   },
+},
+
 };
