@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const usernameRegex = /^[a-zA-Z0-9][a-zA-Z0-9 _.-]{2,29}$/;
 
     // Validate username format
-    if (username && !/^[a-zA-Z0-9 _.-]{3,30}$/.test(username)) {
+    if (username && !usernameRegex.test(username)) {
       return NextResponse.json(
         {
           error:
