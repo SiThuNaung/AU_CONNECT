@@ -79,16 +79,18 @@ export default function Home() {
     // setTimeout(() => setLoading(false), 1500);
   }, []);
 
-  useEffect(() => {console.log(user)}, [user])
+  useEffect(() => {
+    console.log(user);
+  }, [user]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="md:grid md:grid-cols-12 md:gap-6">
-        {/* LEFT PROFILE */ }
+        {/* LEFT PROFILE */}
         <LeftProfile user={user} loading={loading} />
 
         {/* MAIN FEED */}
-        <MainFeed user={mockUser} posts={mockPosts} loading={loading} />
+        {user && <MainFeed user={user} posts={mockPosts} loading={loading} />}
 
         {/* RIGHT EVENT SIDEBAR */}
         <RightEvents events={mockEvents} loading={loading} />

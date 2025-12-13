@@ -2,7 +2,6 @@
 * GLOBAL VARIABLES USED ACROSS THE APP
 * contains routes, paths and other constants 
 */
-import { buildSlug } from "@/app/profile/utils/buildSlug";
 export const BASE_API_PATH = '/api/connect/v1';
 
 export const MAIN_PAGE_PATH = '/';
@@ -28,10 +27,9 @@ export const LOGOUT_API_PATH = BASE_API_PATH + '/auth/logout';
 
 export const ME_API_PATH = BASE_API_PATH + '/profile/me';
 
-//export const ME_API_PATH = BASE_API_PATH + '/me';
 export const POST_API_PATH = BASE_API_PATH + '/posts'
 
-
+export const MEDIA_UPLOAD_API_PATH = BASE_API_PATH + "/upload-media"
 
 // OAuth URLs
 
