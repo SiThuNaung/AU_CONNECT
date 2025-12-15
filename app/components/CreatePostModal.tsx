@@ -13,13 +13,22 @@ import {
 
 import CreatePostModalPropTypes from "@/types/CreatePostModalPropTypes";
 import { handleCreatePost } from "../profile/utils/fetchfunctions";
+import { uploadFile } from "../profile/utils/uploadMedia";
 
-// TODO:put this in separate file
+// TODO:put these in separate file
+type MediaType = "image" | "video" | "file";
+
 type MediaItem = {
   id: string;
   file: File;
-  previewUrl: string;
-  type: "image" | "video";
+  previewUrl: string | undefined;
+  type: MediaType;
+};
+
+const getMediaType = (file: File): MediaType => {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("video/")) return "video";
+  return "file"; // pdf, docx, zip, etc
 };
 
 export default function CreatePostModal({
@@ -27,6 +36,7 @@ export default function CreatePostModal({
   isOpen,
   setIsOpen,
   initialType = "media",
+  enableSuccessModal, 
 }: CreatePostModalPropTypes) {
   const [selectedVisibility, setSelectedVisibility] = useState("everyone");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -40,27 +50,62 @@ export default function CreatePostModal({
   const [currentImage, setCurrentImage] = useState(0);
 
   const [media, setMedia] = useState<MediaItem[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     return () => {
-      media.forEach((m) => URL.revokeObjectURL(m.previewUrl));
+      media.forEach((m) =>
+        URL.revokeObjectURL(m.previewUrl ? m.previewUrl : "")
+      );
     };
   }, [media]);
-
-  const handleNextImage = (step: number) => {
-    let nextImageIndex = currentImage + step;
-    if (nextImageIndex >= media.length) {
-      nextImageIndex = 0;
-    } else if (nextImageIndex < 0) {
-      nextImageIndex = media.length - 1;
-    }
-    setCurrentImage(nextImageIndex);
-  };
 
   /** Update modal type whenever parent changes it */
   useEffect(() => {
     setPostType(initialType);
   }, [initialType]);
+
+  const handleSubmitPost = async () => {
+    console.log("Handle submit is running");
+    
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      const uploadedMedia = await Promise.all(
+        media.map(async (item) => {
+          
+          const url = await uploadFile(item.file);
+
+          if (!url) {
+            throw new Error("Upload failed: no URL returned");
+          }
+
+          return {
+            url,
+            type: item.type,
+            name: item.file.name,
+            mimetype: item.file.type,
+            size: item.file.size,
+          };
+        })
+      );
+
+      await handleCreatePost(
+        postType,
+        title,
+        postContent,
+        selectedVisibility,
+        disableComments,
+        uploadedMedia,
+        () => setIsOpen(false)
+      );
+
+      enableSuccessModal();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const visibilityOptions = [
     {
@@ -240,18 +285,35 @@ export default function CreatePostModal({
 
         {media.length > 0 && (
           <div className="mb-10 px-5 relative w-full h-64 overflow-hidden">
-            {media[currentImage].type === "image" ? (
-              <Image
+            {media[currentImage].type === "image" && (
+              <img
                 src={media[currentImage].previewUrl}
                 alt="preview"
                 className="h-full w-auto min-w-full object-cover mx-auto"
               />
-            ) : (
+            )}
+
+            {media[currentImage].type === "video" && (
               <video
                 src={media[currentImage].previewUrl}
                 controls
                 className="h-full w-auto min-w-full object-cover mx-auto"
               />
+            )}
+
+            {media[currentImage].type === "file" && (
+              <div className="flex items-center justify-center h-full bg-neutral-100 rounded-xl">
+                <div className="text-center">
+                  <Paperclip className="mx-auto h-8 w-8 mb-2" />
+                  <p className="text-sm font-semibold">
+                    {media[currentImage].file.name}
+                  </p>
+                  <p className="text-xs text-neutral-500">
+                    {(media[currentImage].file.size / 1024 / 1024).toFixed(2)}{" "}
+                    MB
+                  </p>
+                </div>
+              </div>
             )}
 
             {/* Prev */}
@@ -277,7 +339,8 @@ export default function CreatePostModal({
             {/* Remove */}
             <button
               onClick={() => {
-                URL.revokeObjectURL(media[currentImage].previewUrl);
+                const previewUrl = media[currentImage].previewUrl;
+                URL.revokeObjectURL(previewUrl ? previewUrl : "");
                 setMedia((prev) => prev.filter((_, i) => i !== currentImage));
                 setCurrentImage((i) => Math.max(0, i - 1));
               }}
@@ -296,18 +359,22 @@ export default function CreatePostModal({
             type="file"
             hidden
             multiple
-            accept="image/*,video/*"
+            accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.zip"
             onChange={(e) => {
               const files = Array.from(e.target.files ?? []);
               if (!files.length) return;
 
               const newItems: MediaItem[] = files.map((file) => {
-                const isImage = file.type.startsWith("image/");
+                const type = getMediaType(file);
+
                 return {
                   id: crypto.randomUUID(),
                   file,
-                  previewUrl: URL.createObjectURL(file),
-                  type: isImage ? "image" : "video",
+                  type,
+                  previewUrl:
+                    type === "image" || type === "video"
+                      ? URL.createObjectURL(file)
+                      : undefined,
                 };
               });
 
@@ -376,24 +443,16 @@ export default function CreatePostModal({
             </button>
 
             <button
-              onClick={() => {
-                handleCreatePost(
-                  postType,
-                  title,
-                  postContent,
-                  selectedVisibility,
-                  disableComments,
-                  (state: boolean) => setIsOpen(state)
-                );
-              }}
-              disabled={!postContent.trim()}
+              onClick={() => handleSubmitPost()}
+              // disabled={!postContent.trim() || isSubmitting}
+              disabled={isSubmitting}
               className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition ${
-                postContent.trim()
-                  ? "bg-linear-to-r from-blue-600 via-purple-600 to-pink-600"
-                  : "bg-neutral-300 cursor-not-allowed"
+                isSubmitting
+                  ? "bg-neutral-300 cursor-not-allowed"
+                  : "bg-linear-to-r from-blue-600 via-purple-600 to-pink-600"
               }`}
             >
-              Post
+              {isSubmitting ? "Posting..." : "Post"}
             </button>
           </div>
         </div>

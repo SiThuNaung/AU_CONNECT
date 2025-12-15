@@ -5,6 +5,7 @@ type CreatePostModalPropTypes = {
   isOpen: boolean;
   setIsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   initialType?: string;
+  enableSuccessModal: () => void;
 };
 
 export default CreatePostModalPropTypes;

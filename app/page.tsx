@@ -5,15 +5,8 @@ import LeftProfile from "./components/Feed_LeftProfile";
 import MainFeed from "./components/Feed_MainFeed";
 import RightEvents from "./components/Feed_RightEvents";
 import User from "@/types/User";
-import { fetchUser } from "./profile/utils/fetchfunctions";
-
-const mockUser = {
-  name: "Zai Swan",
-  title: "Game Developer",
-  education: "Class 2015, School of Science & Technology",
-  location: "Bangkok, Thailand",
-  avatar: "/au-bg.png",
-};
+import { fetchPosts, fetchUser } from "./profile/utils/fetchfunctions";
+import PostType from "@/types/Post";
 
 const mockPosts = [
   {
@@ -70,18 +63,30 @@ const mockEvents = [
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [postList, setPostList] = useState<PostType[] | []>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUser(
       (user: User | null) => setUser(user),
       (state: boolean) => setLoading(state)
     );
-    // setTimeout(() => setLoading(false), 1500);
   }, []);
 
   useEffect(() => {
-    console.log(user);
+    if (!user) return;
+
+    fetchPosts(cursor, setPostList, setCursor, setLoading);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  useEffect(() => {
+    console.log(postList);
+  }, [postList])  
+
+  useEffect(() => {
+    console.log(cursor);
+  }, [cursor])  
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">

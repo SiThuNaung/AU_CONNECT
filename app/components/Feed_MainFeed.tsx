@@ -1,6 +1,10 @@
 "use client";
 
-import { BookOpen, Image as ImageIcon, MessageSquare } from "lucide-react";
+import {
+  BookOpen,
+  Image as ImageIcon,
+  MessageSquare,
+} from "lucide-react";
 import { useState } from "react";
 import Image from "next/image";
 
@@ -11,10 +15,16 @@ import { MainFeedPropTypes } from "@/types/FeedPagePropTypes";
 export default function MainFeed({ user, posts, loading }: MainFeedPropTypes) {
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
   const [selectedPostType, setSelectedPostType] = useState("media");
+  const [showSuccessModal, setShowSuccessModal] = useState(true);
 
   const openModal = (postType: string) => {
     setSelectedPostType(postType);
     setIsCreatePostModalOpen(true);
+  };
+
+  const enableSuccessModal = () => {
+    setShowSuccessModal(true);
+    setTimeout(() => setShowSuccessModal(false), 2000);
   };
 
   return (
@@ -69,6 +79,7 @@ export default function MainFeed({ user, posts, loading }: MainFeedPropTypes) {
           isOpen={isCreatePostModalOpen}
           setIsOpen={setIsCreatePostModalOpen}
           initialType={selectedPostType}
+          enableSuccessModal={enableSuccessModal}
         />
       )}
 
@@ -83,6 +94,19 @@ export default function MainFeed({ user, posts, loading }: MainFeedPropTypes) {
           (post) => post && <Post key={post.id} post={post} isLoading={false} />
         )
       )}
+
+      {/* Show SuccessModal */}
+      <div
+        className={`fixed top-25 right-1/2 left-1/2 z-50 w-67 flex justify-center transition-all duration-300 
+      ${
+      showSuccessModal
+        ? "opacity-100 translate-y-0"
+        : "opacity-0 translate-y-4 pointer-events-none"
+      }`}>
+        <div className="rounded-xl bg-green-500 text-white px-5 py-3 shadow-lg shadow-green-200">
+          Post created successfully 🎉
+        </div>
+      </div>
     </div>
   );
 }

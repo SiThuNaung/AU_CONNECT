@@ -6,7 +6,7 @@ import {
 } from "@azure/storage-blob";
 
 import { getHeaderUserInfo } from "@/lib/authFunctions";
-import { AZURE_STORAGE_ACCOUNT_KEY, AZURE_STORAGE_ACCOUNT_NAME } from "@/lib/env";
+import { AZURE_STORAGE_ACCOUNT_KEY, AZURE_STORAGE_ACCOUNT_NAME, AZURE_STORAGE_CONTAINER_NAME } from "@/lib/env";
 
 export async function POST(req: NextRequest) {
   const [userEmail, userId] = getHeaderUserInfo(req);
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   try {
     const accountName = AZURE_STORAGE_ACCOUNT_NAME;
     const accountKey = AZURE_STORAGE_ACCOUNT_KEY;
-    const containerName = "media";
+    const containerName = AZURE_STORAGE_CONTAINER_NAME;
 
     const fileName = `${crypto.randomUUID()}.jpg`;
 
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       {
         containerName,
         blobName: fileName,
-        permissions: BlobSASPermissions.parse("cw"), // create + write
+        permissions: BlobSASPermissions.parse("rcw"), // read + create + write
         expiresOn: new Date(Date.now() + 5 * 60 * 1000), // 5 min
       },
       sharedKeyCredential

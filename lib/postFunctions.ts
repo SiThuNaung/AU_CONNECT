@@ -3,6 +3,7 @@ import prisma from "./prisma";
 
 import { getHeaderUserInfo } from "./authFunctions";
 import { CreatePostSchema } from "@/zod/PostSchema";
+import { log } from "console";
 
 export async function createPost(req: NextRequest) {
   try {
@@ -21,8 +22,12 @@ export async function createPost(req: NextRequest) {
     const parsed = CreatePostSchema.safeParse(body);
 
     if (!parsed.success) {
+      console.error("ZOD ERROR:", parsed.error.flatten());
       return NextResponse.json(
-        { error: parsed.error.message },
+        {
+          error: "Validation failed",
+          details: parsed.error.flatten(),
+        },
         { status: 400 }
       );
     }
@@ -53,8 +58,6 @@ export async function createPost(req: NextRequest) {
       },
     });
 
-    console.log("From the server: \n" + post);
-
     return NextResponse.json(post, { status: 201 });
   } catch (error) {
     console.error("Error creating post:", error);
@@ -65,8 +68,10 @@ export async function createPost(req: NextRequest) {
   }
 }
 
-export async function getAllPosts(req: NextRequest) {
+export async function getPosts(req: NextRequest) {
   try {
+    log("getpost function is being called");
+
     const [userEmail, userId] = getHeaderUserInfo(req);
 
     if (!userEmail || !userId) {
@@ -75,10 +80,33 @@ export async function getAllPosts(req: NextRequest) {
         { status: 401 }
       );
     }
+
+    log("STEP 1");
+
+    const cursor = req.nextUrl.searchParams.get("cursor");
+    log("cursor: " + cursor);
+
+    log("STEP 2");
+
+    const posts = await prisma.post.findMany({
+      take: 10,
+      ...(cursor && {
+        skip: 1,
+        cursor: { id: cursor },
+      }),
+      orderBy: { createdAt: "desc" },
+    });
+
+    log("STEP 3");
+
+    return NextResponse.json({
+      posts,
+      nextCursor: posts.length ? posts[posts.length - 1].id : null,
+    });
   } catch (error) {
-    console.error("Error creating post:", error);
+    console.error("Error fetching post:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error; fetching post" },
       { status: 500 }
     );
   }
