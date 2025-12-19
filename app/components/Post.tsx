@@ -4,6 +4,7 @@ import Image from "next/image";
 import PostType from "@/types/Post";
 import PostMediaGrid from "./PostMediaGrid";
 import parseDate from "../profile/utils/parseDate";
+import PostAttachments from "./PostAttachments";
 
 export default function Post({
   post,
@@ -32,6 +33,12 @@ export default function Post({
   // If post is missing (should not happen), avoid crash
   if (!post) return null;
 
+  const videosAndImages = post.media?.filter(
+    m => m.type === 'image' || m.type === 'video'
+  );
+
+  const attachments = post.media?.filter(m => m.type === 'file');
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg">
       <div className="flex items-start gap-3 my-4 mx-5">
@@ -52,10 +59,12 @@ export default function Post({
         <h4 className="font-medium text-gray-900 mb-3 mx-5">{post.content}</h4>
       )}
 
-      {post.media && post.media.length > 0 && (
-        <div className="">
-          <PostMediaGrid media={post.media} isLoading={isLoading}/>
-        </div>
+      {videosAndImages && videosAndImages.length > 0 && (
+          <PostMediaGrid media={videosAndImages} isLoading={isLoading}/>
+      )}
+
+      {attachments && attachments.length > 0 && (
+        <PostAttachments media={attachments}/>
       )}
 
       <div className="flex items-center justify-evenly py-4 border-t border-gray-200">

@@ -1,16 +1,11 @@
 import Image from "next/image";
 
-type MediaItem = {
-  url: string;
-  type: string;
-};
-
 export default function PostMediaGrid({
   media,
   maxVisible = 4,
-  isLoading
+  isLoading,
 }: {
-  media: MediaItem[];
+  media: { url: string; type: string }[];
   maxVisible?: number;
   isLoading: boolean;
 }) {
@@ -20,7 +15,7 @@ export default function PostMediaGrid({
   const extraCount = media.length - maxVisible;
   const isSingle = media.length === 1;
   // LCP = Largest Contentful Paint
-  const isLcp = (index: number) => index === 0 && isSingle  
+  const isLcp = (index: number) => index === 0 && isSingle;
   const gridClass = isSingle ? "grid-cols-1" : "grid-cols-2";
 
   // Show skeleton loading state
@@ -62,11 +57,12 @@ export default function PostMediaGrid({
             <Image
               src={item.url}
               alt="Post media"
-              {...(isSingle 
+              {...(isSingle
                 ? {
                     width: 800,
                     height: 800,
-                    className: "w-full h-auto max-h-[70vh] object-cover object-center",
+                    className:
+                      "w-full h-auto max-h-[70vh] object-cover object-center",
                   }
                 : {
                     fill: true,
@@ -74,7 +70,7 @@ export default function PostMediaGrid({
                   })}
               sizes="(max-width: 768px) 100vw, 50vw"
               priority={isLcp(index)}
-              loading={isLcp(index) ? 'eager' : 'lazy'}
+              loading={isLcp(index) ? "eager" : "lazy"}
             />
             {/* +N Overlay */}
             {isLastVisible && !isSingle && (

@@ -18,7 +18,7 @@ import { uploadFile } from "../profile/utils/uploadMedia";
 // TODO:put these in separate file
 type MediaType = "image" | "video" | "file";
 
-type MediaItem = {
+export type MediaItem = {
   id: string;
   file: File;
   previewUrl: string | undefined;
@@ -66,7 +66,6 @@ export default function CreatePostModal({
   }, [initialType]);
 
   const handleSubmitPost = async () => {
-    console.log("Handle submit is running");
     
     if (isSubmitting) return;
     setIsSubmitting(true);

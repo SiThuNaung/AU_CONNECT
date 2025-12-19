@@ -21,6 +21,7 @@ type PostType = {
   content?: string;
 
   media?: {
+    blobName: string;
     url: string;
     type: string;
     name?: string;
