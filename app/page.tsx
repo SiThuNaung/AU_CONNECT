@@ -8,43 +8,6 @@ import User from "@/types/User";
 import { fetchPosts, fetchUser } from "./profile/utils/fetchfunctions";
 import PostType from "@/types/Post";
 
-const mockPosts = [
-  {
-    id: 1,
-    author: "Floyd Miles",
-    education: "Class 2015, School of Martin De Tours",
-    avatar: "/au-bg.png",
-    title: "Back To My Graduation Days",
-    timestamp: "2h",
-    image: "/au-bg.png",
-  },
-  {
-    id: 2,
-    author: "Floyd Miles",
-    education: "Class 2015, School of Martin De Tours",
-    avatar: "/au-bg.png",
-    title: "Back To My Graduation Days",
-    timestamp: "2h",
-    image: "/au-bg.png",
-  },
-  {
-    id: 3,
-    author: "Floyd Miles",
-    education: "Class 2015, School of Martin De Tours",
-    avatar: "/au-bg.png",
-    title: "Back T My Graduation Days",
-    timestamp: "2h",
-    image: "/au-bg.png",
-  },
-  {
-    id: 4,
-    author: "Floyd Miles",
-    education: "Class 2015, School of Nursing Science",
-    avatar: "/au-bg.png",
-    timestamp: "5h",
-  },
-];
-
 const mockEvents = [
   {
     id: 1,
@@ -98,7 +61,7 @@ export default function Home() {
         <LeftProfile user={user} loading={loading} />
 
         {/* MAIN FEED */}
-        {user && <MainFeed user={user} posts={postList} loading={loading} />}
+        {user && <MainFeed user={user} posts={postList} loading={loading} onPostCreated={(newPost) => { setPostList(prev => [newPost, ...prev])}}/>}
 
         {/* RIGHT EVENT SIDEBAR */}
         <RightEvents events={mockEvents} loading={loading} />

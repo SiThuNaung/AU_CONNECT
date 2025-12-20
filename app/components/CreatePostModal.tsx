@@ -36,7 +36,8 @@ export default function CreatePostModal({
   isOpen,
   setIsOpen,
   initialType = "media",
-  enableSuccessModal, 
+  enableSuccessModal,
+  onPostCreated,
 }: CreatePostModalPropTypes) {
   const [selectedVisibility, setSelectedVisibility] = useState("everyone");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -66,14 +67,12 @@ export default function CreatePostModal({
   }, [initialType]);
 
   const handleSubmitPost = async () => {
-    
     if (isSubmitting) return;
     setIsSubmitting(true);
 
     try {
       const uploadedMedia = await Promise.all(
         media.map(async (item) => {
-          
           const blobName = await uploadFile(item.file);
 
           if (!blobName) {
@@ -90,7 +89,7 @@ export default function CreatePostModal({
         })
       );
 
-      await handleCreatePost(
+      const createdPost = await handleCreatePost(
         postType,
         title,
         postContent,
@@ -99,6 +98,19 @@ export default function CreatePostModal({
         uploadedMedia,
         () => setIsOpen(false)
       );
+
+      const normalizedPost = {
+        ...createdPost,
+        profilePic: createdPost.profilePic || "/default_profile.jpg",
+        media: Array.isArray(createdPost.media)
+          ? createdPost.media.map((m: any) => ({
+              ...m,
+              url: null, // IMPORTANT
+            }))
+          : [],
+      };
+
+      onPostCreated(normalizedPost);
 
       enableSuccessModal();
     } finally {
@@ -168,7 +180,7 @@ export default function CreatePostModal({
             <div className="h-14 w-14 rounded-2xl overflow-hidden p-0.5">
               <div className="h-full w-full rounded-2xl overflow-hidden bg-white relative">
                 <Image
-                  src={user.profilePic ? user.profilePic : "/default_profile"}
+                  src={user.profilePic || "/default_profile"}
                   alt="User"
                   fill
                   className="object-cover"

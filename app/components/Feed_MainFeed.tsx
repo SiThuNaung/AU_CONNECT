@@ -12,7 +12,7 @@ import Post from "./Post";
 import CreatePostModal from "./CreatePostModal";
 import { MainFeedPropTypes } from "@/types/FeedPagePropTypes";
 
-export default function MainFeed({ user, posts, loading }: MainFeedPropTypes) {
+export default function MainFeed({ user, posts, loading, onPostCreated }: MainFeedPropTypes) {
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
   const [selectedPostType, setSelectedPostType] = useState("media");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -80,6 +80,7 @@ export default function MainFeed({ user, posts, loading }: MainFeedPropTypes) {
           setIsOpen={setIsCreatePostModalOpen}
           initialType={selectedPostType}
           enableSuccessModal={enableSuccessModal}
+          onPostCreated={onPostCreated}
         />
       )}
 

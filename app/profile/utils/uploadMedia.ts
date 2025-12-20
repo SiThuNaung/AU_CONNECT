@@ -7,16 +7,12 @@ export async function uploadFile(file: File) {
     method: "POST",
   });
 
-    console.log("STEP 1")
   const { uploadUrl, blobName } = await res.json();
-    console.log("blobName: " + blobName)
 
-    console.log("STEP 2")
   if (!uploadUrl) {
     throw new Error("No upload URL returned");
   }
 
-    console.log("STEP 3")
   if (!blobName) {
     throw new Error("No blobName returned; file name missing");
   }
@@ -35,9 +31,6 @@ export async function uploadFile(file: File) {
   if (!uploadRes.ok) {
     throw new Error("Azure upload failed");
   }
-
-    console.log("STEP 5")
-    console.log("blobName: " + blobName)
 
   // 3. Return the blob name or file name
   return blobName;

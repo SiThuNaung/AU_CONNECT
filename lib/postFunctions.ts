@@ -62,7 +62,7 @@ export async function createPost(req: NextRequest) {
       data: {
         userId,
         username: user.username,
-        profilePic: user.profilePic ?? "",
+        profilePic: user.profilePic ?? null,
         ...data, // title, content, media
       },
     });

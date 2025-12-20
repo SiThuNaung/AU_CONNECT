@@ -60,7 +60,7 @@ export async function handleCreatePost(
   setIsOpen: (state: boolean) => void
 ) {
   try {
-    await fetch(POST_API_PATH, {
+    const res = await fetch(POST_API_PATH, {
       method: "POST",
       cache: "no-store",
       headers: { "Content-Type": "application/json" },
@@ -74,6 +74,12 @@ export async function handleCreatePost(
       }),
     });
 
+    if (!res.ok) {
+      throw new Error("Failed to create post");
+    }
+
+    const createdPost = await res.json()
+    return createdPost
     setIsOpen(false);
   } catch (error) {
     console.error("Create post error:", error);
