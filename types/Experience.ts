@@ -1,8 +1,10 @@
+import { EmploymentType } from "@/lib/generated/prisma";
+
 export type Experience = {
   id: string;
 
   title: string;
-  employmentType: "Full-time" | "Part-time" | "Freelance" | "Internship";
+  employmentType: EmploymentType;
   company: string;
 
   startMonth: number;

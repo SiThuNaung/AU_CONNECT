@@ -41,11 +41,18 @@ model User {
   updatedAt     DateTime @updatedAt
 }
 
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  FREELANCE
+  INTERNSHIP
+}
+
 model Experience {
   id              String   @id @map("_id") @default(auto()) @db.ObjectId
 
   title           String
-  employmentType  String
+  employmentType  EmploymentType
   company         String
 
   startMonth      Int

@@ -66,7 +66,14 @@ export default function MessagePages() {
   const [messageInput, setMessageInput] = useState("What time would you like to meet ?");
   const [showChat, setShowChat] = useState(false);
 
-  const handleSelectConversation = (conversation) => {
+  const handleSelectConversation = (conversation:{
+    id: number;
+    name: string;
+    avatar: string;
+    lastMessage: string;
+    time: string;
+    unread: number;
+}) => {
     setSelectedConversation(conversation);
     setShowChat(true);
   };

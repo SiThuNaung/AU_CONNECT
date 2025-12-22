@@ -14,16 +14,8 @@ import {
 import CreatePostModalPropTypes from "@/types/CreatePostModalPropTypes";
 import { handleCreatePost } from "../profile/utils/fetchfunctions";
 import { uploadFile } from "../profile/utils/uploadMedia";
+import { MediaType, MediaItem } from "@/types/Media"
 
-// TODO:put these in separate file
-type MediaType = "image" | "video" | "file";
-
-export type MediaItem = {
-  id: string;
-  file: File;
-  previewUrl: string | undefined;
-  type: MediaType;
-};
 
 const getMediaType = (file: File): MediaType => {
   if (file.type.startsWith("image/")) return "image";

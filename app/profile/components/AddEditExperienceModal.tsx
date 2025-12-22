@@ -3,6 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import type Experience from "@/types/Experience";
+import type { EmploymentType } from "@/lib/generated/prisma";
+
+const EMPLOYMENT_LABELS: Record<EmploymentType, string> = {
+  FULL_TIME: "Full-time",
+  PART_TIME: "Part-time",
+  FREELANCE: "Freelance",
+  INTERNSHIP: "Internship",
+};
 
 const MONTHS = [
   "January","February","March","April","May","June",

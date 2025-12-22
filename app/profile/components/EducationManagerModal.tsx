@@ -92,6 +92,7 @@ export default function EducationManagerModal({
                   <button
                     onClick={async () => {
                       await fetch(
+                        //TODO:put in constant
                         `/api/connect/v1/profile/me/delete/educationFields/${edu.id}`,
                         {
                           method: "DELETE",
@@ -122,6 +123,7 @@ export default function EducationManagerModal({
         onSave={async (data) => {
           if (editing) {
             const res = await fetch(
+              //TODO:put the route in constant
               `/api/connect/v1/profile/me/update/educationFields/${editing.id}`,
               {
                 method: "PUT",
