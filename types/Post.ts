@@ -22,6 +22,7 @@ type PostType = {
 
   media?: {
     blobName: string;
+    thumbnailBlobName?: string;
     url: string;
     type: string;
     name?: string;

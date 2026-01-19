@@ -1,53 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  StorageSharedKeyCredential,
-  generateBlobSASQueryParameters,
-  BlobSASPermissions,
+    StorageSharedKeyCredential,
+    generateBlobSASQueryParameters,
+    BlobSASPermissions,
 } from "@azure/storage-blob";
 
 import { getHeaderUserInfo } from "@/lib/authFunctions";
 import { AZURE_STORAGE_ACCOUNT_KEY, AZURE_STORAGE_ACCOUNT_NAME, AZURE_STORAGE_CONTAINER_NAME } from "@/lib/env";
+import { EXTENSIONS } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
-  const [userEmail, userId] = getHeaderUserInfo(req);
-
-  if (!userEmail || !userId) {
-    return NextResponse.json(
-      { error: "Unauthorized action please sign in again" },
-      { status: 401 }
-    );
-  }
-
   try {
-    const accountName = AZURE_STORAGE_ACCOUNT_NAME;
-    const accountKey = AZURE_STORAGE_ACCOUNT_KEY;
-    const containerName = AZURE_STORAGE_CONTAINER_NAME;
+    const [userEmail, userId] = getHeaderUserInfo(req);
+    if (!userEmail || !userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const fileName = `${crypto.randomUUID()}.jpg`;
+    const { fileType } = await req.json();
+    if (!fileType || typeof fileType !== "string") {
+      return NextResponse.json({ error: "Invalid fileType" }, { status: 400 });
+    }
+
+    const [category] = fileType.split("/");
+
+    let folder = "files";
+    let extension = "";
+
+    if (category === "image" && EXTENSIONS[fileType]) {
+      folder = "images";
+      extension = EXTENSIONS[fileType];
+    } else if (category === "video" && EXTENSIONS[fileType]) {
+      folder = "videos";
+      extension = EXTENSIONS[fileType];
+    }
+
+    const blobName = `${folder}/${crypto.randomUUID()}${extension}`;
 
     const sharedKeyCredential = new StorageSharedKeyCredential(
-      accountName,
-      accountKey
+      AZURE_STORAGE_ACCOUNT_NAME,
+      AZURE_STORAGE_ACCOUNT_KEY
     );
 
     const sasToken = generateBlobSASQueryParameters(
       {
-        containerName,
-        blobName: fileName,
-        permissions: BlobSASPermissions.parse("cw"), // create + write
-        expiresOn: new Date(Date.now() + 5 * 60 * 1000), // 5 min
+        containerName: AZURE_STORAGE_CONTAINER_NAME,
+        blobName,
+        permissions: BlobSASPermissions.parse("cw"),
+        expiresOn: new Date(Date.now() + 5 * 60 * 1000),
       },
       sharedKeyCredential
     ).toString();
 
-    const uploadUrl = `https://${accountName}.blob.core.windows.net/${containerName}/${fileName}?${sasToken}`;
+    const uploadUrl = `https://${AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/${AZURE_STORAGE_CONTAINER_NAME}/${blobName}?${sasToken}`;
 
-    return NextResponse.json({ uploadUrl: uploadUrl, blobName: fileName });
+    return NextResponse.json({ uploadUrl, blobName });
   } catch (err) {
-    console.log(
-      err instanceof Error
-        ? err.message
-        : "Something went wrong while trying to upload image"
-    );
+    console.error(err);
+    return NextResponse.json({ error: "Upload URL failed" }, { status: 500 });
   }
 }

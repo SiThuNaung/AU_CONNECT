@@ -98,3 +98,16 @@ export const TOP_LEVEL_COMMENTS_FETCH_LIMIT = 15;
 export const REPLIES_PER_FETCH = 5;
 export const REPLY_CHARACTER_LIMIT = 5000;
 
+
+// file extensions for supported media types
+export const EXTENSIONS: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/svg+xml": ".svg",
+
+  "video/mp4": ".mp4",
+  "video/quicktime": ".mov",
+  "video/webm": ".webm",
+};
+

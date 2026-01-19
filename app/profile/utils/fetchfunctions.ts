@@ -60,6 +60,7 @@ export async function handleCreatePost(
   disableComments: boolean,
   uploadedMedia: {
     blobName: string;
+    thumbnailBlobName?: string;
     type: string;
     name: string;
     mimetype: string;
