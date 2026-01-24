@@ -78,7 +78,7 @@ export default async function ProfilePage(props: {
     })),
 
     education: user.education,
-    posts: user.posts,
+    //posts: user.posts,
   };
 
   return (

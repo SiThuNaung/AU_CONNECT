@@ -18,9 +18,12 @@ import EditAboutModal from "./EditAboutModal"; // ✅ ADD THIS
 import Post from "@/app/components/Post";
 import User from "@/types/User";
 import Experience from "@/types/Experience";
-import Education from "@/types/Education"; 
+import Education from "@/types/Education";
 import PostType from "@/types/Post";
 
+// ✅ ADD: react-query + profile posts fetcher
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { fetchProfilePosts } from "../utils/fetchProfilePosts";
 
 export default function ProfileView({
   user,
@@ -40,14 +43,41 @@ export default function ProfileView({
   const [openAboutModal, setOpenAboutModal] = useState(false); // ✅ ADD
   const [loading, setLoading] = useState(true);
 
-  const [experience, setExperience] = useState<Experience[]>(user.experience ?? []);
-  const [education, setEducation] = useState<Education[]>(user.education ?? []);
+  const [experience, setExperience] = useState<Experience[]>(
+    user.experience ?? []
+  );
+  const [education, setEducation] = useState<Education[]>(
+    user.education ?? []
+  );
   const [about, setAbout] = useState(user.about ?? ""); // ✅ ADD (UI updates after save)
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1500);
     return () => clearTimeout(timer);
   }, []);
+
+  // ✅ ADD: fetch this profile user's posts (infinite, like home feed)
+  const {
+    data: postData,
+    isLoading: profilePostLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["profilePosts", user.id],
+    queryFn: ({ pageParam }) =>
+      fetchProfilePosts({ pageParam, userId: user.id }),
+    enabled: !!user?.id,
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  });
+
+  // ✅ ADD: flatten posts
+  const posts: PostType[] =
+    postData?.pages.flatMap((page: { posts: PostType[] }) => page.posts) ?? [];
+
+  // ✅ ADD: use this for Post skeletons inside profile
+  const isPostsLoading = loading || profilePostLoading;
 
   return (
     <>
@@ -96,10 +126,14 @@ export default function ProfileView({
                   />
                 </div>
 
-                <h1 className="text-2xl font-bold text-gray-900 mt-2">{user.username}</h1>
+                <h1 className="text-2xl font-bold text-gray-900 mt-2">
+                  {user.username}
+                </h1>
                 <p className="text-gray-700">{user.title}</p>
                 <p className="text-sm text-gray-600 mt-1">{user.location}</p>
-                <p className="text-sm text-gray-600">{user.connections} connections</p>
+                <p className="text-sm text-gray-600">
+                  {user.connections} connections
+                </p>
               </div>
             </div>
 
@@ -162,22 +196,24 @@ export default function ProfileView({
               <p className="text-sm text-gray-700 whitespace-pre-line">
                 {about || "This user has not added an about section yet."}
               </p>
-
             </SectionCard>
 
             {/* ACTIVITY */}
             <SectionCard title="Activity">
-              <p className="text-sm text-gray-600 mb-3">{user.connections} connections</p>
+              <p className="text-sm text-gray-600 mb-3">
+                {user.connections} connections
+              </p>
 
               <div className="flex gap-4 border-b pb-2">
                 {["posts", "videos", "images", "documents"].map((t) => (
                   <button
                     key={t}
                     onClick={() => setTab(t)}
-                    className={`pb-2 capitalize ${tab === t
+                    className={`pb-2 capitalize ${
+                      tab === t
                         ? "border-b-2 border-blue-600 text-blue-600"
                         : "text-gray-600"
-                      }`}
+                    }`}
                   >
                     {t}
                   </button>
@@ -186,12 +222,40 @@ export default function ProfileView({
 
               <div className="mt-4 space-y-4">
                 {tab === "posts" ? (
-                  user.posts?.map((p: PostType) => (
-                    <Post key={p.id} post={p} isLoading={loading} />
-                  ))
+                  <>
+                    {isPostsLoading ? (
+                      <>
+                        <Post isLoading={true} />
+                        <Post isLoading={true} />
+                      </>
+                    ) : posts.length > 0 ? (
+                      <>
+                        {posts.map((p: PostType) => (
+                          <Post key={p.id} post={p} isLoading={false} />
+                        ))}
 
+                        {hasNextPage && (
+                          <div className="flex justify-center pt-2">
+                            <button
+                              onClick={() => fetchNextPage()}
+                              disabled={isFetchingNextPage}
+                              className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+                            >
+                              {isFetchingNextPage ? "Loading..." : "Load more"}
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center text-gray-600 py-10">
+                        No posts yet
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <div className="text-center text-gray-600 py-10">No {tab} yet</div>
+                  <div className="text-center text-gray-600 py-10">
+                    No {tab} yet
+                  </div>
                 )}
               </div>
             </SectionCard>
@@ -200,9 +264,14 @@ export default function ProfileView({
           {/* RIGHT SIDEBAR */}
           <div className="hidden lg:block col-span-4 space-y-4 sticky top-20">
             <div className="bg-white rounded-lg border p-4">
-              <h2 className="font-semibold text-gray-900 mb-3">People you may be interested in</h2>
+              <h2 className="font-semibold text-gray-900 mb-3">
+                People you may be interested in
+              </h2>
               <RecommendedList users={recommendedPeople} limit={4} />
-              <button onClick={() => setOpenModal(true)} className="mt-4 text-sm text-blue-600 font-semibold">
+              <button
+                onClick={() => setOpenModal(true)}
+                className="mt-4 text-sm text-blue-600 font-semibold"
+              >
                 Show more
               </button>
             </div>
@@ -211,9 +280,17 @@ export default function ProfileView({
       </div>
 
       {/* MODALS */}
-      <RecommendedModal open={openModal} onClose={() => setOpenModal(false)} users={recommendedPeople} />
+      <RecommendedModal
+        open={openModal}
+        onClose={() => setOpenModal(false)}
+        users={recommendedPeople}
+      />
 
-      <EditProfileModal open={openEditModal} onClose={() => setOpenEditModal(false)} user={user} />
+      <EditProfileModal
+        open={openEditModal}
+        onClose={() => setOpenEditModal(false)}
+        user={user}
+      />
 
       <ExperienceManagerModal
         open={openExperienceModal}
