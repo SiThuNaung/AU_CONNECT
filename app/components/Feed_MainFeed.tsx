@@ -21,7 +21,6 @@ export default function MainFeed({
 }: MainFeedPropTypes) {
   const [isCreatePostModalOpen, setIsCreatePostModalOpen] = useState(false);
   const [selectedPostType, setSelectedPostType] = useState("media");
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const virtuosoRef = useRef<VirtuosoHandle>(null!);
   const setVirtuosoRef = useFeedStore((s) => s.setVirtuosoRef);
@@ -35,11 +34,6 @@ export default function MainFeed({
   const openModal = (postType: string) => {
     setSelectedPostType(postType);
     setIsCreatePostModalOpen(true);
-  };
-
-  const enableSuccessModal = () => {
-    setShowSuccessModal(true);
-    setTimeout(() => setShowSuccessModal(false), 2000);
   };
 
   // Footer component for loading indicator
@@ -56,7 +50,7 @@ export default function MainFeed({
   const CreatePostCard = () => {
     const avatarUrl = useResolvedMediaUrl(
       user?.profilePic,
-      "/default_profile.jpg"
+      "/default_profile.jpg",
     );
 
     return (
@@ -142,27 +136,18 @@ export default function MainFeed({
               if (!post) return null;
               return (
                 <div className="mb-4">
-                  <Post key={post.id} post={post} isLoading={false} />
+                  <Post
+                    key={post.id}
+                    post={post}
+                    isLoading={false}
+                    currentUserId={user.id}
+                  />
                 </div>
               );
             }}
           />
         </div>
       )}
-
-      {/* Show SuccessModal */}
-      <div
-        className={`fixed bottom-10 left-5 z-50 w-67 flex justify-center transition-all duration-300 
-      ${
-        showSuccessModal
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 translate-y-4 pointer-events-none"
-      }`}
-      >
-        <div className="rounded-xl bg-green-500 text-white px-5 py-3 shadow-lg shadow-green-200">
-          Post created successfully 🎉
-        </div>
-      </div>
     </div>
   );
 }

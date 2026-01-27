@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { MediaItem } from "@/types/Media";
 
 export interface UploadJob {
+  // post fields
   id: string;
   postType: string;
   title: string;
@@ -9,6 +10,7 @@ export interface UploadJob {
   visibility: string;
   disableComments: boolean;
   media: MediaItem[];
+  // Status fields
   status: "pending" | "uploading" | "complete" | "error";
   progress: number; // 0-100
   error?: string;

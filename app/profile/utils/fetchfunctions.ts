@@ -13,7 +13,7 @@ import {
   POST_API_PATH,
   REPLIES_API_PATH,
 } from "@/lib/constants";
-import PostType from "@/types/Post";
+import PostsPage from "@/types/PostsPage";
 
 // calls /me
 export async function fetchUser() {
@@ -66,7 +66,7 @@ export async function handleCreatePost(
     mimetype: string;
     size: number;
   }[],
-  setIsOpen: (state: boolean) => void
+  setIsOpen: (state: boolean) => void,
 ) {
   try {
     const res = await fetch(POST_API_PATH, {
@@ -152,7 +152,7 @@ export function useTopLevelComments(postId: string) {
     initialPageParam: null,
     queryFn: async ({ pageParam }) => {
       const res = await fetch(
-        COMMENT_API_PATH(postId) + (pageParam ? `?cursor=${pageParam}` : "")
+        COMMENT_API_PATH(postId) + (pageParam ? `?cursor=${pageParam}` : ""),
       );
 
       if (!res.ok) throw new Error("Failed to fetch comments");
@@ -192,11 +192,6 @@ export function useReplies(postId: string, commentId: string) {
   });
 }
 
-type PostsPage = {
-  posts: PostType[];
-  nextCursor: string | null;
-};
-
 type PostsInfiniteData = InfiniteData<PostsPage>;
 
 export function useToggleLike() {
@@ -213,8 +208,9 @@ export function useToggleLike() {
     onMutate: async ({ postId, isLiked }) => {
       await queryClient.cancelQueries({ queryKey: ["posts"] });
 
-      const previousPosts =
-        queryClient.getQueryData<PostsInfiniteData>(["posts"]);
+      const previousPosts = queryClient.getQueryData<PostsInfiniteData>([
+        "posts",
+      ]);
 
       queryClient.setQueryData<PostsInfiniteData>(["posts"], (old) => {
         if (!old) return old;
@@ -227,10 +223,11 @@ export function useToggleLike() {
               post.id === postId
                 ? {
                     ...post,
-                    likeCount: post.likeCount && post.likeCount + (isLiked ? -1 : 1),
+                    likeCount:
+                      post.likeCount && post.likeCount + (isLiked ? -1 : 1),
                     isLiked: !isLiked, // 🔥 important
                   }
-                : post
+                : post,
             ),
           })),
         };
@@ -251,11 +248,7 @@ export function useToggleLike() {
   });
 }
 
-export async function callPostLikeUpdate({
-  postId,
-}: {
-  postId: string;
-}) {
+export async function callPostLikeUpdate({ postId }: { postId: string }) {
   const res = await fetch(LIKE_POST_API_PATH(postId), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -267,4 +260,39 @@ export async function callPostLikeUpdate({
   }
 
   return res.json();
+}
+
+export async function deletePost(postId: string) {
+  const res = await fetch(`${POST_API_PATH}?postId=${postId}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error?.error || "Failed to toggle like");
+  }
+
+  return res.json();
+}
+
+export function useDeletePost() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deletePost,
+    onSuccess: (_, postId) => {
+      // ✅ Update the infinite query structure
+      queryClient.setQueryData(["posts"], (oldData: any) => {
+        if (!oldData?.pages) return oldData;
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: any) => ({
+            ...page,
+            posts: page.posts.filter((post: any) => post.id !== postId),
+          })),
+        };
+      });
+    },
+  });
 }

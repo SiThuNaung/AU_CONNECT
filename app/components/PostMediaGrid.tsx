@@ -18,7 +18,16 @@ export default function PostMediaGrid({
     profilePic: string | undefined | null;
     createdAt: string | Date | undefined;
   };
-  media: { url: string; type: string }[];
+  media:
+    | {
+        blobName: string;
+        thumbnailBlobName?: string | undefined;
+        url: string;
+        type: string | undefined;
+        mimeType?: string | undefined;
+        size?: number | undefined;
+      }[]
+    | undefined;
   title: string | null;
   content: string | undefined;
   maxVisible?: number;

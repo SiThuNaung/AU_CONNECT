@@ -7,17 +7,20 @@ import PostProfile from "./PostProfile";
 import PostAttachments from "./PostAttachments";
 import PostText from "./PostText";
 import PostDetailsModal from "./PostDetailsModal";
-import { useToggleLike } from "../profile/utils/fetchfunctions";
+import { useToggleLike, useDeletePost } from "../profile/utils/fetchfunctions";
 
 export default function Post({
   post,
   isLoading,
+  currentUserId,
 }: {
   post?: PostType;
   isLoading: boolean;
+  currentUserId?: string;
 }) {
   const [postModalOpen, setPostModelOpen] = useState(false);
   const toggleLike = useToggleLike();
+  const deletePost = useDeletePost();
 
   // Skeleton UI
   if (isLoading) {
@@ -40,17 +43,21 @@ export default function Post({
   if (!post) return null;
 
   const videosAndImages = post.media?.filter(
-    (m) => m.type === "image" || m.type === "video"
+    (m) => m.type === "image" || m.type === "video",
   );
 
-  const containsVideosOrImages =
-    videosAndImages?.length && videosAndImages.length > 0;
-
+  const containsVideosOrImages = (videosAndImages?.length ?? 0) > 0;
   const attachments = post.media?.filter((m) => m.type === "file");
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg">
-      <PostProfile post={post}/>
+      <PostProfile
+        post={post}
+        currentUserId={currentUserId}
+        onDelete={(postId: string) => {
+          deletePost.mutate(postId);
+        }}
+      />
 
       {post.content && <PostText text={post.content} />}
 

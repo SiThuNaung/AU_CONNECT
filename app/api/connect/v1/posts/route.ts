@@ -1,13 +1,22 @@
 import { NextRequest } from "next/server";
 
-import { createPost, getPosts } from "@/lib/postFunctions";
+import { createPost, deletePost, getPosts } from "@/lib/postFunctions";
 
-// create post 
+// create post
 export async function POST(req: NextRequest) {
-    return await createPost(req);
+  return await createPost(req);
 }
 
 // get all posts
 export async function GET(req: NextRequest) {
   return await getPosts(req);
 }
+
+// modify posts
+export async function PUT(req: NextRequest) {}
+
+// delte posts
+export async function DELETE(req: NextRequest) {
+  return await deletePost(req);
+}
+

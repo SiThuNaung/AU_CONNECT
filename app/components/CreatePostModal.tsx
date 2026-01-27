@@ -26,6 +26,15 @@ const getMediaType = (file: File): MediaType => {
   return "file"; // pdf, docx, zip, etc
 };
 
+const getDraftFileString = (fList: string[]) => {
+  if (!fList.length) return "";
+
+  const filesPart = fList.join(", ");
+  const suffix = fList.length > 1 ? "files were" : "file was";
+
+  return `${filesPart} ${suffix} uploaded before`;
+};
+
 const formatFileSize = (bytes: number): string => {
   if (bytes < 1024) return bytes + " B";
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
@@ -57,10 +66,20 @@ export default function CreatePostModal({
   // ✅ resolved avatar url (blobName -> signed url) via cached hook
   const resolvedProfilePicUrl = useResolvedMediaUrl(
     user?.profilePic,
-    DEFAULT_PROFILE_PIC
+    DEFAULT_PROFILE_PIC,
   );
 
   const { draft, saveDraft, clearDraft, hasDraft } = useDraftStore();
+  const hasDraftFiles = draft.mediaFileNames.length > 0 && media.length === 0;
+
+  const hasTextContent = postContent.trim().length > 0;
+  const hasTitle =
+    (postType === "discussion" || postType === "article") &&
+    title.trim().length > 0;
+
+  const hasMedia = media.length > 0;
+
+  const canPost = hasTextContent || hasTitle || hasMedia;
 
   useEffect(() => {
     if (hasDraft()) {
@@ -83,7 +102,10 @@ export default function CreatePostModal({
           content: postContent,
           visibility: selectedVisibility,
           disableComments,
-          mediaFileNames: media.map((m) => m.file.name),
+          mediaFileNames:
+            media.length > 0
+              ? media.map((m) => m.file.name)
+              : draft.mediaFileNames,
         });
       }
     }, 1000); // Save 1 second after user stops typing
@@ -96,11 +118,8 @@ export default function CreatePostModal({
     setPostType(initialType);
   }, [initialType]);
 
-  useEffect(() => {
-    console.log("Upload jobs:", useUploadStore.getState().jobs);
-  }, []);
-
   const handleClearDraft = () => {
+    setSelectedVisibility("everyone");
     clearDraft();
     setTitle("");
     setPostContent("");
@@ -185,7 +204,7 @@ export default function CreatePostModal({
   if (!isOpen) return null;
 
   const currentVisibility = visibilityOptions.find(
-    (opt) => opt.id === selectedVisibility
+    (opt) => opt.id === selectedVisibility,
   );
 
   return (
@@ -312,6 +331,12 @@ export default function CreatePostModal({
           />
         </div>
 
+        {hasDraftFiles && (
+          <p className="text-gray-400 mb-5 px-5">
+            {getDraftFileString(draft.mediaFileNames)}
+          </p>
+        )}
+
         {/* Media Preview */}
         {media.length > 0 && (
           <div className="mb-10 px-5 relative w-full">
@@ -425,7 +450,7 @@ export default function CreatePostModal({
                     type,
                     previewUrl,
                   };
-                })
+                }),
               );
 
               setMedia((prev) => [...prev, ...newItems]);
@@ -491,10 +516,10 @@ export default function CreatePostModal({
             </button>
 
             <button
-              onClick={() => handleSubmitPost()}
-              disabled={isSubmitting}
+              onClick={handleSubmitPost}
+              disabled={!canPost || isSubmitting}
               className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition ${
-                isSubmitting
+                !canPost || isSubmitting
                   ? "bg-neutral-300 cursor-not-allowed"
                   : "bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 hover:shadow-xl"
               }`}

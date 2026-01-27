@@ -1,12 +1,16 @@
 "use client";
-
 import { useEffect } from "react";
 import LeftProfile from "./components/Feed_LeftProfile";
 import MainFeed from "./components/Feed_MainFeed";
 import RightEvents from "./components/Feed_RightEvents";
 import { fetchPosts, fetchUser } from "./profile/utils/fetchfunctions";
 import PostType from "@/types/Post";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { setQueryClient } from "@/lib/services/uploadService";
 
 const mockEvents = [
   {
@@ -24,6 +28,13 @@ const mockEvents = [
 ];
 
 export default function Home() {
+  // ✅ Get query client and pass to upload service
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setQueryClient(queryClient);
+  }, [queryClient]);
+
   // USER
   const { data: user, isLoading: userLoading } = useQuery({
     queryKey: ["user"],
@@ -47,7 +58,7 @@ export default function Home() {
 
   useEffect(() => {
     console.log(user);
-  }, [user])
+  }, [user]);
 
   // FLATTEN POSTS
   const posts: PostType[] = data?.pages.flatMap((page) => page.posts) ?? [];
@@ -57,7 +68,7 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="md:grid md:grid-cols-12 md:gap-6">
           <LeftProfile user={user} loading={userLoading} />
- 
+
           {user && (
             <MainFeed
               user={user}
@@ -68,7 +79,6 @@ export default function Home() {
               isFetchingNextPage={isFetchingNextPage}
             />
           )}
-
           <RightEvents events={mockEvents} loading={false} />
         </div>
       </div>

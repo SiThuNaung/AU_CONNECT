@@ -1,7 +1,6 @@
 import { MEDIA_UPLOAD_API_PATH } from "@/lib/constants";
 
 export async function uploadFile(file: File) {
-  console.log("upload media is being called");
   // Ask server for a SAS upload URL
   const res = await fetch(MEDIA_UPLOAD_API_PATH, {
     method: "POST",

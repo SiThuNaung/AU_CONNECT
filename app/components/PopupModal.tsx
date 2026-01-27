@@ -2,11 +2,17 @@
 
 import { X } from "lucide-react";
 
-export default function LogoutModal({
+export default function PopupModal({
+  title,
+  titleText,
+  actionText,
   open,
   onClose,
   onConfirm,
 }: {
+  title?: string;
+  titleText?: string;
+  actionText?: string;
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -16,7 +22,6 @@ export default function LogoutModal({
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-999 px-4">
       <div className="bg-white rounded-xl shadow-lg max-w-sm p-6 relative">
-
         {/* Close button */}
         <button
           onClick={onClose}
@@ -26,11 +31,13 @@ export default function LogoutModal({
         </button>
 
         <h2 className="text-lg font-semibold text-gray-900 mb-2">
-          Log out?
+          {title ? title : "Unknown Title"}
         </h2>
 
         <p className="text-gray-600 text-sm mb-6">
-          Are you sure you want to log out of AU Connect?
+          {titleText
+            ? titleText
+            : "Oops you've caught an error because this is not suppose to show"}
         </p>
 
         <div className="flex items-center justify-end gap-3">
@@ -45,7 +52,7 @@ export default function LogoutModal({
             onClick={onConfirm}
             className="px-4 py-2 text-sm rounded-md bg-red-500 text-white hover:bg-red-600"
           >
-            Log Out
+            {actionText ? actionText : "Confirm"}
           </button>
         </div>
       </div>

@@ -29,9 +29,9 @@ import {
   PROFILE_PAGE_PATH,
 } from "@/lib/constants";
 import { fetchUser, handleLogout } from "../profile/utils/fetchfunctions";
-import LogoutModal from "./LogoutModal";
 import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 import { useFeedStore } from "@/lib/stores/feedStore";
+import PopupModal from "./PopupModal";
 
 const Skeleton = ({ className = "" }) => (
   <div className={`animate-pulse bg-gray-200 rounded ${className}`} />
@@ -51,7 +51,7 @@ export default function Header() {
   // ✅ resolved avatar (cached)
   const resolvedProfilePicUrl = useResolvedMediaUrl(
     user?.profilePic,
-    "/default_profile.jpg"
+    "/default_profile.jpg",
   );
 
   const navBarIndicatedPages = [
@@ -265,7 +265,10 @@ export default function Header() {
           </nav>
         )}
 
-        <LogoutModal
+        <PopupModal
+          title="Are you sure you want to logout?"
+          titleText="You will need to sign in again to access your account."
+          actionText="Log Out"
           open={showModal}
           onClose={() => setShowModal(false)}
           onConfirm={() => {
