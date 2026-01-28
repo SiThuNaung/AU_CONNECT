@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
+import { useRouter } from "next/navigation";
 
 type IncomingRequest = {
   id: string;
@@ -40,7 +41,9 @@ export default function ConnectPage() {
   const [requests, setRequests] = useState<IncomingRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actingId, setActingId] = useState<string | null>(null); // disable buttons per row
+  const [actingId, setActingId] = useState<string | null>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     let ignore = false;
@@ -52,7 +55,7 @@ export default function ConnectPage() {
 
         const res = await fetch(
           "/api/connect/v1/connect/requests?type=incoming",
-          { credentials: "include" }
+          { credentials: "include" },
         );
 
         const json = await res.json();
@@ -60,20 +63,20 @@ export default function ConnectPage() {
 
         if (!ignore) setRequests(json.data || []);
       } catch (e: unknown) {
-        if (!ignore) setError(e instanceof Error ? e.message : "Server error");
+        if (!ignore) {
+          setError(e instanceof Error ? e.message : "Server error");
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
     }
 
     loadIncoming();
-
     return () => {
       ignore = true;
     };
   }, []);
 
-  // Decline => call /request/[id]/decline then remove from UI
   async function handleDecline(requestId: string) {
     try {
       setError(null);
@@ -81,16 +84,33 @@ export default function ConnectPage() {
 
       const res = await fetch(
         `/api/connect/v1/connect/request/${requestId}/decline`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
+        { method: "POST", credentials: "include" },
       );
 
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error || "Failed to decline request");
 
-      // ✅ pop out from connects page
+      setRequests((prev) => prev.filter((r) => r.id !== requestId));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Server error");
+    } finally {
+      setActingId(null);
+    }
+  }
+
+  async function handleAccept(requestId: string) {
+    try {
+      setError(null);
+      setActingId(requestId);
+
+      const res = await fetch(
+        `/api/connect/v1/connect/request/${requestId}/accept`,
+        { method: "POST", credentials: "include" },
+      );
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Failed to accept request");
+
       setRequests((prev) => prev.filter((r) => r.id !== requestId));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Server error");
@@ -104,7 +124,7 @@ export default function ConnectPage() {
       <div className="w-full px-10 py-10">
         <section className="mb-12">
           <div className="flex items-center gap-3 mb-6">
-            <h2 className="text-lg font-bold text-neutral-800 tracking-tight">
+            <h2 className="text-lg font-bold text-neutral-800">
               Connect Requests
             </h2>
 
@@ -141,11 +161,17 @@ export default function ConnectPage() {
                   key={req.id}
                   className="group relative overflow-hidden rounded-2xl bg-linear-to-br from-neutral-50 to-neutral-100/50 p-6 border border-neutral-200/50 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
                 >
-                  <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    {/* Left */}
-                    <div className="flex items-start md:items-center gap-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    
+                    {/* LEFT — clickable profile */}
+                    <div
+                      className="flex items-start md:items-center gap-4 cursor-pointer hover:opacity-90"
+                      onClick={() => {
+                        if (u?.id) router.push(`/profile/${u.id}`);
+                      }}
+                    >
                       <div className="relative">
-                        <div className="relative h-20 w-20 rounded-2xl overflow-hidden ring-2 ring-neutral-200 group-hover:ring-blue-400 transition-all duration-300">
+                        <div className="relative h-20 w-20 rounded-2xl overflow-hidden ring-2 ring-neutral-200 group-hover:ring-blue-400 transition-all">
                           <RequestAvatar
                             profilePic={u?.profilePic}
                             username={u?.username}
@@ -155,7 +181,7 @@ export default function ConnectPage() {
                       </div>
 
                       <div className="text-sm space-y-1">
-                        <div className="font-bold text-neutral-900 text-base">
+                        <div className="font-bold text-neutral-900 text-base hover:underline">
                           {u?.username || "Unknown user"}
                         </div>
                         <div className="text-neutral-600 font-medium">
@@ -169,24 +195,31 @@ export default function ConnectPage() {
                       </div>
                     </div>
 
-                    {/* Right */}
+                    {/* RIGHT — actions */}
                     <div className="flex items-center gap-3 ml-auto">
-                      {/* Accept later */}
                       <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAccept(req.id);
+                        }}
                         disabled={actingId === req.id}
-                        className="rounded-xl bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="rounded-xl bg-blue-100 hover:bg-blue-200 px-6 py-2.5 text-sm font-semibold text-blue-700 disabled:opacity-60"
                       >
-                        Accept
+                        {actingId === req.id ? "Accepting..." : "Accept"}
                       </button>
 
                       <button
-                        onClick={() => handleDecline(req.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDecline(req.id);
+                        }}
                         disabled={actingId === req.id}
-                        className="rounded-xl bg-neutral-200 hover:bg-neutral-300 px-6 py-2.5 text-sm font-semibold text-neutral-700 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="rounded-xl bg-neutral-200 hover:bg-neutral-300 px-6 py-2.5 text-sm font-semibold text-neutral-700 disabled:opacity-60"
                       >
                         {actingId === req.id ? "Declining..." : "Decline"}
                       </button>
                     </div>
+
                   </div>
                 </div>
               );
