@@ -27,6 +27,9 @@ import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { fetchProfilePosts } from "../utils/fetchProfilePosts";
 
+import ConnectionsModal from "./ConnectionsModal";
+import { useRouter } from "next/navigation";
+
 export default function ProfileView({
   user,
   recommendedPeople,
@@ -48,25 +51,31 @@ export default function ProfileView({
   const [openProfilePhotoModal, setOpenProfilePhotoModal] = useState(false);
 
   const [experience, setExperience] = useState<Experience[]>(
-    user.experience ?? []
+    user.experience ?? [],
   );
   const [education, setEducation] = useState<Education[]>(user.education ?? []);
   const [about, setAbout] = useState(user.about ?? "");
 
   // ✅ local profile pic value so UI updates after upload/delete without refresh
   const [profilePicValue, setProfilePicValue] = useState<string>(
-    user.profilePic || "/default_profile.jpg"
+    user.profilePic || "/default_profile.jpg",
   );
 
   // ✅ resolve using hook (cached)
   const resolvedProfilePicUrl = useResolvedMediaUrl(
     profilePicValue,
-    "/default_profile.jpg"
+    "/default_profile.jpg",
   );
   // Connect button states
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
   const [connectSuccess, setConnectSuccess] = useState(false); // "Requested"
+
+  const router = useRouter();
+
+  const [openConnectionsModal, setOpenConnectionsModal] = useState(false);
+  const [connectionsList, setConnectionsList] = useState<any[]>([]);
+  const [connectionsLoading, setConnectionsLoading] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1500);
@@ -103,7 +112,9 @@ export default function ProfileView({
 
     async function loadOutgoingStatus() {
       try {
-        const res = await fetch("/api/connect/v1/connect/requests?type=outgoing");
+        const res = await fetch(
+          "/api/connect/v1/connect/requests?type=outgoing",
+        );
         const json = await res.json();
 
         if (!res.ok) return;
@@ -114,7 +125,7 @@ export default function ProfileView({
         // - direct ids: r.toUserId
         // - included user: r.toUser?.id
         const alreadyRequested = outgoing.some(
-          (r) => r.toUserId === user.id || r.toUser?.id === user.id
+          (r) => r.toUserId === user.id || r.toUser?.id === user.id,
         );
 
         if (!ignore) setConnectSuccess(alreadyRequested);
@@ -129,6 +140,39 @@ export default function ProfileView({
       ignore = true;
     };
   }, [isOwner, user.id]);
+
+  useEffect(() => {
+    if (!openConnectionsModal) return;
+
+    let ignore = false;
+
+    async function loadConnections() {
+      try {
+        setConnectionsLoading(true);
+
+        const res = await fetch(
+          `/api/connect/v1/connect/connections?userId=${user.id}`,
+          { credentials: "include" },
+        );
+
+        const json = await res.json();
+        if (!res.ok)
+          throw new Error(json?.error || "Failed to load connections");
+
+        if (!ignore) setConnectionsList(json.data || []);
+      } catch {
+        if (!ignore) setConnectionsList([]);
+      } finally {
+        if (!ignore) setConnectionsLoading(false);
+      }
+    }
+
+    loadConnections();
+
+    return () => {
+      ignore = true;
+    };
+  }, [openConnectionsModal, user.id]);
 
   async function handleConnect() {
     try {
@@ -210,8 +254,8 @@ export default function ProfileView({
                           {connectLoading
                             ? "Sending..."
                             : connectSuccess
-                            ? "Requested"
-                            : "Connect"}
+                              ? "Requested"
+                              : "Connect"}
                         </button>
 
                         <button className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-sm bg-white">
@@ -259,9 +303,12 @@ export default function ProfileView({
                   <span className="underline cursor-pointer">Contact info</span>
                 </p>
 
-                <p className="text-sm text-gray-600">
+                <button
+                  onClick={() => setOpenConnectionsModal(true)}
+                  className="text-sm text-gray-600 hover:underline"
+                >
                   {user.connections} connections
-                </p>
+                </button>
               </div>
             </div>
 
@@ -280,9 +327,13 @@ export default function ProfileView({
               }
             >
               {experience.length > 0 ? (
-                experience.map((exp) => <ExperienceItem key={exp.id} {...exp} />)
+                experience.map((exp) => (
+                  <ExperienceItem key={exp.id} {...exp} />
+                ))
               ) : (
-                <p className="text-sm text-gray-500">No experience added yet.</p>
+                <p className="text-sm text-gray-500">
+                  No experience added yet.
+                </p>
               )}
             </SectionCard>
 
@@ -408,6 +459,14 @@ export default function ProfileView({
       </div>
 
       {/* MODALS */}
+
+      <ConnectionsModal
+        open={openConnectionsModal}
+        loading={connectionsLoading}
+        users={connectionsList}
+        onClose={() => setOpenConnectionsModal(false)}
+      />
+
       <RecommendedModal
         open={openModal}
         onClose={() => setOpenModal(false)}
