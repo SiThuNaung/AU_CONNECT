@@ -2,22 +2,34 @@ import { ThumbsUp, MessageCircle, Send } from "lucide-react";
 import { useState } from "react";
 
 import PostType from "@/types/Post";
+import User from "@/types/User";
 import PostMediaGrid from "./PostMediaGrid";
 import PostProfile from "./PostProfile";
 import PostAttachments from "./PostAttachments";
 import PostText from "./PostText";
 import PostDetailsModal from "./PostDetailsModal";
-import { useToggleLike } from "../profile/utils/fetchfunctions";
+import {
+  useToggleLike,
+  useDeletePost,
+  useEditPost,
+} from "../profile/utils/fetchfunctions";
+import CreatePostModal from "./CreatePostModal";
 
 export default function Post({
+  user,
   post,
   isLoading,
 }: {
+  user?: User;
   post?: PostType;
   isLoading: boolean;
 }) {
   const [postModalOpen, setPostModelOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
   const toggleLike = useToggleLike();
+  const deletePost = useDeletePost();
+  const editPostMutation = useEditPost();
 
   // Skeleton UI
   if (isLoading) {
@@ -40,17 +52,24 @@ export default function Post({
   if (!post) return null;
 
   const videosAndImages = post.media?.filter(
-    (m) => m.type === "image" || m.type === "video"
+    (m) => m.type === "image" || m.type === "video",
   );
 
-  const containsVideosOrImages =
-    videosAndImages?.length && videosAndImages.length > 0;
-
+  const containsVideosOrImages = (videosAndImages?.length ?? 0) > 0;
   const attachments = post.media?.filter((m) => m.type === "file");
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg">
-      <PostProfile post={post}/>
+      <PostProfile
+        post={post}
+        currentUserId={user?.id}
+        onDelete={(postId: string) => {
+          deletePost.mutate(postId);
+        }}
+        onEdit={() => {
+          setEditModalOpen(true);
+        }}
+      />
 
       {post.content && <PostText text={post.content} />}
 
@@ -140,6 +159,16 @@ export default function Post({
           content={post.content}
           clickedIndex={0}
           onClose={() => setPostModelOpen(false)}
+        />
+      )}
+
+      {editModalOpen && (
+        <CreatePostModal
+          user={user || { id: "", username: "unknown", slug: "slug" }}
+          isOpen={editModalOpen}
+          setIsOpen={setEditModalOpen}
+          editMode={true}
+          exisistingPost={post}
         />
       )}
     </div>

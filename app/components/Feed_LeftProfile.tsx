@@ -11,7 +11,7 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
 
   const resolvedProfilePicUrl = useResolvedMediaUrl(
     user?.profilePic,
-    DEFAULT_AVATAR
+    DEFAULT_AVATAR,
   );
 
   // Safely handle navigation
@@ -43,7 +43,13 @@ export default function LeftProfile({ user, loading }: LeftProfilePropTypes) {
 
   return (
     <div className="lg:col-span-3 md:col-span-4 flex justify-center md:justify-start">
-      <div className="bg-white md:rounded-lg border border-gray-200 overflow-hidden flex-1 sticky top-20 w-full md:w-auto md:max-w-xs self-start">
+      <div
+        className="
+          bg-white md:rounded-lg border border-gray-200 overflow-hidden flex-1
+          static md:sticky md:top-6
+          w-full md:w-auto md:max-w-xs self-start
+        "
+      >
         <div className="hidden md:block h-24 bg-gray-200 relative">
           <Image
             src={user?.coverPhoto || "/default_cover.jpg"}

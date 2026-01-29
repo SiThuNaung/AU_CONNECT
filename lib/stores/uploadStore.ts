@@ -1,16 +1,27 @@
 import { create } from "zustand";
 import { MediaItem } from "@/types/Media";
+import { PostMediaWithUrl } from "@/types/PostMedia";
 
 export interface UploadJob {
+  // core
   id: string;
   postType: string;
   title: string;
   content: string;
   visibility: string;
   disableComments: boolean;
+
+  // NEW MEDIA ONLY (files)
   media: MediaItem[];
+
+  // edit-only
+  isEdit?: boolean;
+  postId?: string;
+  existingMedia?: PostMediaWithUrl[]; // authoritative, already-uploaded media
+
+  // status
   status: "pending" | "uploading" | "complete" | "error";
-  progress: number; // 0-100
+  progress: number;
   error?: string;
 }
 

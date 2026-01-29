@@ -28,10 +28,10 @@ import {
   PROFILE_PAGE_PATH,
 } from "@/lib/constants";
 import { fetchUser, handleLogout } from "../profile/utils/fetchfunctions";
-import LogoutModal from "./LogoutModal";
 import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 import { useFeedStore } from "@/lib/stores/feedStore";
 import { buildSlug } from "@/app/profile/utils/buildSlug";
+import PopupModal from "./PopupModal";
 
 const Skeleton = ({ className = "" }) => (
   <div className={`animate-pulse bg-gray-200 rounded ${className}`} />
@@ -240,7 +240,10 @@ export default function Header() {
           </button>
         </div>
 
-        <LogoutModal
+        <PopupModal
+          title="Confirm Logout"
+          titleText="Are you sure you want to log out?"
+          actionText="Logout"
           open={showModal}
           onClose={() => setShowModal(false)}
           onConfirm={() => {
