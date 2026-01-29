@@ -37,7 +37,6 @@ export default function CoverPhotoCropModal({
     height: number;
   } | null>(initialCrop?.croppedAreaPixels ?? null);
 
-  // Restore last crop when reopening
   useEffect(() => {
     if (!open) return;
     setCrop(initialCrop?.crop ?? { x: 0, y: 0 });
@@ -49,11 +48,10 @@ export default function CoverPhotoCropModal({
     setCroppedAreaPixels(croppedPixels);
   }, []);
 
-  // Hard guard (fixes TS + runtime)
   if (!open || !imageUrl) return null;
 
   async function handleSave() {
-    if (!croppedAreaPixels || !imageUrl) return;
+    if (!croppedAreaPixels) return;
 
     const coverPhotoCrop: ProfileCoverCrop = {
       crop,
@@ -64,8 +62,8 @@ export default function CoverPhotoCropModal({
     const croppedFile = await getCroppedCoverFile(
       imageUrl,
       croppedAreaPixels,
-      1500, // width
-      500   // height (3:1)
+      1500,
+      500
     );
 
     onSave({ croppedFile, coverPhotoCrop });
@@ -78,9 +76,7 @@ export default function CoverPhotoCropModal({
       <div className="relative z-10 w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden">
         {/* HEADER */}
         <div className="px-4 py-3 border-b flex items-center justify-between">
-          <div className="font-semibold text-gray-900">
-            Edit cover photo
-          </div>
+          <div className="font-semibold text-gray-900">Edit cover photo</div>
           <button
             type="button"
             onClick={onCancel}
@@ -97,15 +93,12 @@ export default function CoverPhotoCropModal({
             <div className="relative h-[360px]">
               <Cropper
                 image={imageUrl}
-                crop={crop}
+                crop={crop}                 
                 zoom={zoom}
                 aspect={3 / 1}
                 cropShape="rect"
                 showGrid={false}
-                // vertical movement only
-                onCropChange={(newCrop) =>
-                  setCrop({ x: 0, y: newCrop.y })
-                }
+                onCropChange={setCrop}      
                 onZoomChange={setZoom}
                 onCropComplete={onCropComplete}
               />
@@ -114,9 +107,7 @@ export default function CoverPhotoCropModal({
 
           {/* CONTROLS */}
           <div className="col-span-12 md:col-span-4 p-4">
-            <div className="text-sm font-medium text-gray-900 mb-2">
-              Zoom
-            </div>
+            <div className="text-sm font-medium text-gray-900 mb-2">Zoom</div>
             <input
               type="range"
               min={1}
