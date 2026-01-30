@@ -26,27 +26,25 @@ export async function processUpload(jobId: string) {
 
     // Upload media files
     const uploadedMedia = await Promise.all(
-      job.media.map(async (item, index) => {
-        // little bit sloppy error handling for variable types
-        if (!item.file) {
-          return;
-        }
-        const { blobName, thumbnailBlobName } = await uploadFile(item.file);
-        if (!blobName) throw new Error("Upload failed");
+      job.media
+        .filter((item): item is typeof item & { file: File } => !!item.file)
+        .map(async (item, index) => {
+          const { blobName, thumbnailBlobName } = await uploadFile(item.file);
+          if (!blobName) throw new Error("Upload failed");
 
-        const total = job.media.length || 1;
-        const progress = Math.floor(((index + 1) / total) * 80);
-        store.updateJobProgress(jobId, progress);
+          const total = job.media.length || 1;
+          const progress = Math.floor(((index + 1) / total) * 80);
+          store.updateJobProgress(jobId, progress);
 
-        return {
-          blobName,
-          thumbnailBlobName,
-          type: item.type,
-          name: item.file.name,
-          mimetype: item.file.type,
-          size: item.file.size,
-        };
-      }),
+          return {
+            blobName,
+            thumbnailBlobName,
+            type: item.type,
+            name: item.file.name,
+            mimetype: item.file.type,
+            size: item.file.size,
+          };
+        }),
     );
 
     console.log("✅ Media uploaded:", uploadedMedia);
@@ -101,20 +99,20 @@ export async function processEdit(jobId: string) {
     store.updateJobStatus(jobId, "uploading");
 
     const uploadedNewMedia = await Promise.all(
-      job.media.map(async (item) => {
-        if (!item.file) return null;
+      job.media
+        .filter((item): item is typeof item & { file: File } => !!item.file)
+        .map(async (item) => {
+          const uploadResult = await uploadFile(item.file);
 
-        const uploadResult = await uploadFile(item.file);
-
-        return {
-          blobName: uploadResult.blobName,
-          thumbnailBlobName: uploadResult.thumbnailBlobName ?? null,
-          type: item.type,
-          name: item.file.name,
-          mimetype: item.file.type,
-          size: item.file.size,
-        };
-      }),
+          return {
+            blobName: uploadResult.blobName,
+            thumbnailBlobName: uploadResult.thumbnailBlobName,
+            type: item.type,
+            name: item.file.name,
+            mimetype: item.file.type,
+            size: item.file.size,
+          };
+        }),
     );
 
     store.updateJobProgress(jobId, 90);

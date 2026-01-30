@@ -99,8 +99,19 @@ export default function CreatePostModal({
 
       // Just store existing media as-is
       if (exisistingPost.media && exisistingPost.media.length > 0) {
-        // TODO: fix-ts-error
-        setExistingMedia(exisistingPost.media);
+        // ensure required fields are present for existing media
+        setExistingMedia(
+          exisistingPost.media.map((m) => ({
+            blobName: m.blobName,
+            thumbnailBlobName: m.thumbnailBlobName,
+            url: m.url,
+            type: m.type,
+
+            name: m.name ?? m.blobName,
+            mimetype: m.mimetype ?? "application/octet-stream",
+            size: m.size ?? 0,
+          })),
+        );
       }
     }
   }, [editMode, exisistingPost, isOpen]);
@@ -186,7 +197,7 @@ export default function CreatePostModal({
           setIsOpen(false);
           processEdit(jobId);
         } else {
-          // 🔥 EDIT WITHOUT UPLOAD
+          // EDIT WITHOUT UPLOAD
           await editPostMutation.mutateAsync({
             postId: exisistingPost.id,
             data: {
@@ -208,7 +219,7 @@ export default function CreatePostModal({
           setIsOpen(false);
         }
       } else {
-        // 🔥 CREATE POST (ALWAYS JOB)
+        // CREATE POST (ALWAYS JOB)
         const jobId = useUploadStore.getState().addJob({
           postType,
           title,
@@ -644,7 +655,7 @@ export default function CreatePostModal({
               className={`px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition ${
                 !canPost || isSubmitting
                   ? "bg-neutral-300 cursor-not-allowed"
-                  : "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:shadow-xl"
+                  : "bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 hover:shadow-xl"
               }`}
             >
               {isSubmitting

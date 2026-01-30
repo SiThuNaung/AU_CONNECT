@@ -53,6 +53,12 @@ export default function PostMediaGrid({
   const isLcp = (index: number) => index === 0 && isSingle;
   const gridClass = isSingle ? "grid-cols-1" : "grid-cols-2";
 
+  // Ensure each media item has a type
+  const nMedia = media.map((m) => ({
+    ...m,
+    type: m.type ?? "file", // or "image" / "video" / whatever is valid
+  }));
+
   // Show skeleton loading state
   if (isLoading) {
     return (
@@ -139,7 +145,7 @@ export default function PostMediaGrid({
       {postModalOpen && (
         <PostDetailsModal
           postInfo={postInfo}
-          media={media}
+          media={nMedia}
           title={title}
           content={content}
           clickedIndex={currentMediaIndex}
