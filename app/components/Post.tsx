@@ -1,5 +1,6 @@
 import { ThumbsUp, MessageCircle, Send } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import PostType from "@/types/Post";
 import User from "@/types/User";
@@ -7,9 +8,11 @@ import PostMediaGrid from "./PostMediaGrid";
 import PostProfile from "./PostProfile";
 import PostAttachments from "./PostAttachments";
 import PostText from "./PostText";
-import PostDetailsModal from "./PostDetailsModal";
+// import PostDetailsModal from "./PostDetailsModal";
 import { useToggleLike, useDeletePost } from "../profile/utils/fetchfunctions";
 import CreatePostModal from "./CreatePostModal";
+import ShareModal from "../profile/components/ShareModal";
+import { POST_DETAIL_PAGE_PATH } from "@/lib/constants";
 
 export default function Post({
   user,
@@ -20,7 +23,17 @@ export default function Post({
   post?: PostType;
   isLoading: boolean;
 }) {
-  const [postModalOpen, setPostModelOpen] = useState(false);
+  if (!post) {
+    return null;
+  }
+
+  const router = useRouter();
+  // Navigate to post detail page
+  const openPostModal = (postId: string, index: number) => {
+    router.push(POST_DETAIL_PAGE_PATH(postId, index));
+  };
+
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
   const toggleLike = useToggleLike();
@@ -92,6 +105,7 @@ export default function Post({
           title={post.title ? post.title : null}
           content={post.content}
           isLoading={isLoading}
+          onClick={(index) => openPostModal(post.id, index)}
         />
       )}
 
@@ -109,13 +123,13 @@ export default function Post({
             {post.likeCount} likes
           </span>
           <span
-            onClick={() => setPostModelOpen(true)}
+            onClick={() => openPostModal(post.id, 0)}
             className="text-sm text-gray-500 mr-3 cursor-pointer hover:text-blue-500 hover:underline hover:underline-offset-2"
           >
             {numOfCommentsContent(post)}
           </span>
           <span className="text-sm text-gray-500 mr-3 cursor-pointer hover:text-blue-500 hover:underline hover:underline-offset-2">
-            {123} shares
+            {post.shareCount || 0} shares
           </span>
         </div>
       </div>
@@ -139,35 +153,29 @@ export default function Post({
           <span>{post.isLiked ? "Liked" : "Like"}</span>
         </button>
         <button
-          onClick={() => setPostModelOpen(true)}
+          onClick={() => openPostModal(post.id, 0)}
           className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
         >
           <MessageCircle className="w-5 h-5" />
           <span>Comment</span>
         </button>
-        <button className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer">
+        <button
+          onClick={() => setShareModalOpen(true)}
+          className="flex items-center gap-2 text-gray-600 hover:text-red-600 cursor-pointer"
+        >
           <Send className="w-5 h-5" />
           <span>Share</span>
         </button>
       </div>
 
-      {postModalOpen && (
-        <PostDetailsModal
-          postInfo={{
-            id: post.id,
-            username: post.username,
-            profilePic: post.profilePic,
-            createdAt: post.createdAt,
-            commentsDisabled: post.commentsDisabled,
-          }}
-          media={post.media}
-          title={post.title}
-          content={post.content}
-          clickedIndex={0}
-          onClose={() => setPostModelOpen(false)}
-        />
-      )}
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        shareUrl={`${window.location.origin}${POST_DETAIL_PAGE_PATH(post.id, 0, "share")}`}
+      />
 
+      {/* Edit Post Modal */}
       {editModalOpen && (
         <CreatePostModal
           user={user || { id: "", username: "unknown", slug: "slug" }}

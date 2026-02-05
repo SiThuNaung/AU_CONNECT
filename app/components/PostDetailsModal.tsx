@@ -12,7 +12,6 @@ import {
 import parseDate from "../profile/utils/parseDate";
 import PostDetailsModalTypes from "@/types/PostDetailsModalTypes";
 import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
-import { useEffect } from "react";
 
 export default function PostDetailsModal({
   postInfo,
@@ -43,10 +42,6 @@ export default function PostDetailsModal({
     hasNextPage,
     isFetchingNextPage,
   } = useTopLevelComments(postInfo.id, commentsDisabled ?? false);
-
-  useEffect(() => {
-    console.log(`comments:\n${postInfo.commentsDisabled}`);
-  }, [postInfo]);
 
   const comments: CommentType[] =
     data?.pages.flatMap((page) => page.comments) ?? [];

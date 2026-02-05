@@ -1,11 +1,14 @@
+import PostType from "./Post";
+
 type PostDetailsModalTypes = {
-  postInfo: {
-    id: string;
-    username: string | undefined;
-    profilePic: string | undefined | null;
-    createdAt: string | Date | undefined;
-    commentsDisabled?: boolean | undefined;
-  };
+  // postInfo: {
+  //   id: string;
+  //   username: string | undefined;
+  //   profilePic: string | undefined | null;
+  //   createdAt: string | Date | undefined;
+  //   commentsDisabled?: boolean | undefined;
+  // };
+  postInfo: PostType;
   media?: { url: string; type: string }[] | null;
   title?: string | null;
   content: string | undefined;
@@ -14,4 +17,3 @@ type PostDetailsModalTypes = {
 };
 
 export default PostDetailsModalTypes;
-

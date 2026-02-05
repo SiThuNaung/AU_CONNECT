@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import VideoPlayer from "./VideoPlayer";
 
@@ -14,6 +15,9 @@ export default function MediaCarousel({
 }) {
   const [currentIndex, setCurrentIndex] = useState(clickedIndex);
   const [direction, setDirection] = useState<"left" | "right">("right");
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Touch (swipe) handling
   const touchStartX = useRef<number | null>(null);
@@ -41,12 +45,26 @@ export default function MediaCarousel({
   // Navigation
   const slidePrev = () => {
     setDirection("left");
-    setCurrentIndex((i) => Math.max(0, i - 1));
+    const newIndex = Math.max(0, currentIndex - 1);
+    setCurrentIndex(newIndex);
+
+    const params = new URLSearchParams(window.location.search);
+    params.set("media", newIndex.toString());
+    router.replace(`${window.location.pathname}?${params.toString()}`, {
+      scroll: false,
+    });
   };
 
   const slideNext = () => {
     setDirection("right");
-    setCurrentIndex((i) => Math.min(mediaList.length - 1, i + 1));
+    const newIndex = Math.min(mediaList.length - 1, currentIndex + 1);
+    setCurrentIndex(newIndex);
+
+    const params = new URLSearchParams(window.location.search);
+    params.set("media", newIndex.toString());
+    router.replace(`${window.location.pathname}?${params.toString()}`, {
+      scroll: false,
+    });
   };
 
   // Keyboard handling
@@ -110,6 +128,8 @@ export default function MediaCarousel({
             className="max-h-full max-w-full object-contain"
           />
         )}
+
+        {mediaList[currentIndex]?.type === "file" && <></>}
       </div>
 
       {/* Left arrow */}

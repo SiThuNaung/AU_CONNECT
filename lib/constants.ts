@@ -6,6 +6,24 @@
 export const BASE_API_PATH = "/api/connect/v1";
 
 export const MAIN_PAGE_PATH = "/";
+export const POST_DETAIL_PAGE_PATH = (
+  postId: string,
+  index?: number,
+  ref?: string,
+) => {
+  const params = new URLSearchParams();
+
+  if (index !== undefined) {
+    params.set("media", index.toString());
+  }
+
+  if (ref) {
+    params.set("ref", ref);
+  }
+
+  const queryString = params.toString();
+  return `/posts/${postId}${queryString ? `?${queryString}` : ""}`;
+};
 export const SIGNIN_PAGE_PATH = "/auth/register";
 export const ONBOARD_PAGE_PATH = "/auth/onboarding";
 export const CONNECT_PAGE_PATH = "/connect";
@@ -43,6 +61,8 @@ export const POST_API_PATH = BASE_API_PATH + "/posts";
 export const SINGLE_POST_API_PATH = (postId: string) => {
   return BASE_API_PATH + `/posts/${postId}`;
 };
+export const SHARE_POST_API_PATH = (postId: string) =>
+  `${BASE_API_PATH}/posts/${postId}/share`;
 // GET all my experiences
 export const GET_EXPERIENCE_API_PATH = ME_API_PATH + "/get/experienceFields";
 
@@ -138,3 +158,40 @@ export const EXTENSIONS: Record<string, string> = {
   "video/quicktime": ".mov",
   "video/webm": ".webm",
 };
+
+export const FILE_STYLES: Record<string, { label: string; className: string }> =
+  {
+    "application/pdf": {
+      label: "PDF",
+      className: "bg-red-100 text-red-700",
+    },
+    "application/msword": {
+      label: "DOC",
+      className: "bg-blue-100 text-blue-700",
+    },
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+      label: "DOCX",
+      className: "bg-blue-100 text-blue-700",
+    },
+    "application/vnd.ms-excel": {
+      label: "XLS",
+      className: "bg-green-100 text-green-700",
+    },
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+      label: "XLSX",
+      className: "bg-green-100 text-green-700",
+    },
+    "application/vnd.ms-powerpoint": {
+      label: "PPT",
+      className: "bg-orange-100 text-orange-700",
+    },
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+      {
+        label: "PPTX",
+        className: "bg-orange-100 text-orange-700",
+      },
+    "application/zip": {
+      label: "ZIP",
+      className: "bg-purple-100 text-purple-700",
+    },
+  };

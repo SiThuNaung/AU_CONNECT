@@ -37,6 +37,7 @@ type PostType = {
   isLiked?: boolean;
   likeCount?: number;
   commentCount?: number;
+  shareCount?: number;
   numOfComments?: number;
 
   createdAt?: string | Date;
