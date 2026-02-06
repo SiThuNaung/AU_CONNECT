@@ -48,14 +48,19 @@ export default function PostDetailsModal({
 
   const createCommentMutation = useMutation({
     mutationFn: createComment,
-
     onSuccess: (newComment, variables) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { postId, parentId } = variables;
+      const { postId, parentCommentId } = variables;
 
       queryClient.invalidateQueries({
         queryKey: ["comments", postId],
       });
+
+      // Also invalidate replies if it was a nested reply
+      if (parentCommentId) {
+        queryClient.invalidateQueries({
+          queryKey: ["replies", parentCommentId],
+        });
+      }
     },
   });
 

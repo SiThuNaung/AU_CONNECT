@@ -23,7 +23,7 @@ export default function CommentItem({
     {
       postId: string;
       content: string;
-      parentId?: string;
+      parentCommentId?: string;
     },
     unknown
   >;
@@ -44,7 +44,7 @@ export default function CommentItem({
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useReplies(postId, comment.id);
+  } = useReplies(postId, comment.id, isOpen);
 
   const replies = data?.pages.flatMap((page) => page.replies) ?? [];
 
@@ -95,7 +95,7 @@ export default function CommentItem({
               createCommentMutation.mutate({
                 postId,
                 content: text,
-                parentId: comment.id,
+                parentCommentId: comment.id,
               });
               setIsReplying(false);
               setIsOpen(true); // 🔥 auto-open replies after replying

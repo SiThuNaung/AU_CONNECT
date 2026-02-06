@@ -12,6 +12,7 @@ import {
   X,
   MessageCircleMore,
   LogOut,
+  UserRound,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -50,22 +51,24 @@ const SearchResultItem = ({
   );
 
   return (
-    <button
+    <div
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-100 text-left"
+      className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
     >
       <Image
         src={resolvedProfilePic}
         alt={user.username}
-        width={36}
-        height={36}
+        width={40}
+        height={40}
         className="rounded-full object-cover"
       />
-      <div>
-        <p className="text-sm font-medium text-gray-900">{user.username}</p>
-        {user.title && <p className="text-xs text-gray-500">{user.title}</p>}
+      <div className="flex flex-col">
+        <div className="font-medium text-gray-900">{user.username}</div>
+        {user.title && (
+          <div className="text-sm text-gray-500">{user.title}</div>
+        )}
       </div>
-    </button>
+    </div>
   );
 };
 
@@ -117,20 +120,20 @@ export default function Header() {
   const hidden = [SIGNIN_PAGE_PATH, ONBOARD_PAGE_PATH].includes(pathName);
 
   const handleProfileClick = () => {
-    if (!user?.slug) return; // DO NOT CHANGE
+    if (!user?.slug) return;
     router.push(`/profile/${user.slug}`);
   };
 
   const scrollFeedToTop = useFeedStore((s) => s.scrollToTop);
 
   return hidden ? null : (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
+    <header className="sticky top-0 bg-white shadow-md z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div
             onClick={() => {
-              if (currentPage == MAIN_PAGE_PATH) {
+              if (currentPage === MAIN_PAGE_PATH) {
                 scrollFeedToTop();
               } else {
                 router.push(MAIN_PAGE_PATH);
@@ -140,20 +143,21 @@ export default function Header() {
           >
             <Image
               src="/au-connect-logo.png"
-              width={45}
-              height={45}
-              alt="logo"
+              alt="AU Connect"
+              width={40}
+              height={40}
+              className="object-contain"
             />
-            <h1 className="text-2xl font-bold text-gray-900">AU Connect</h1>
+            <div className="text-xl font-bold text-black">AU Connect</div>
           </div>
 
           {/* 🔍 DESKTOP SEARCH */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
+          <div className="hidden md:flex flex-1 max-w-md mx-8 relative">
             <div
-              className="relative w-full"
+              className="w-full relative"
               onBlur={() => setTimeout(() => setOpenResults(false), 150)}
             >
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 value={query}
                 onChange={(e) => {
@@ -167,14 +171,13 @@ export default function Header() {
 
               {/* 🔧 SEARCH RESULTS */}
               {openResults && query.length >= 2 && (
-                <div className="absolute top-full mt-2 w-full bg-white border rounded-lg shadow-lg z-50">
+                <div className="absolute top-full mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto">
                   {isFetching ? (
-                    <div className="p-3 text-sm text-gray-500">
+                    <div className="px-4 py-3 text-gray-500 text-sm">
                       Searching...
                     </div>
                   ) : searchResults.length > 0 ? (
                     searchResults.map((u: any) => {
-                      // Ensure we have a proper slug (API should provide it, but fallback to buildSlug)
                       const userSlug = u.slug || buildSlug(u.username, u.id);
 
                       return (
@@ -190,86 +193,216 @@ export default function Header() {
                       );
                     })
                   ) : (
-                    <div className="p-3 text-sm text-gray-500">No results</div>
+                    <div className="px-4 py-3 text-gray-500 text-sm">
+                      No results
+                    </div>
                   )}
                 </div>
               )}
             </div>
           </div>
 
-          {/* NAV */}
+          {/* DESKTOP NAV */}
           <nav className="hidden md:flex items-center gap-6">
             {[
-              { href: MAIN_PAGE_PATH, icon: <Home />, label: "Home" },
-              { href: CONNECT_PAGE_PATH, icon: <UserPlus />, label: "Connect" },
+              { href: MAIN_PAGE_PATH, icon: Home, label: "Home" },
+              { href: CONNECT_PAGE_PATH, icon: UserPlus, label: "Connect" },
               {
                 href: MESSAGES_PAGE_PATH,
-                icon: <MessageCircleMore />,
+                icon: MessageCircleMore,
                 label: "Messaging",
               },
               {
                 href: NOTIFICATION_PAGE_PATH,
-                icon: <Bell />,
+                icon: Bell,
                 label: "Notification",
               },
             ].map((item, i) => (
               <Link
                 key={i}
                 href={item.href}
-                className={`flex flex-col items-center gap-1 hover:text-red-500 rounded-lg ${
-                  currentPage === item.href ? "text-red-500" : "text-gray-600"
+                className={`flex flex-col items-center gap-1 transition-colors ${
+                  currentPage === item.href
+                    ? "text-red-600"
+                    : "text-gray-600 hover:text-red-600"
                 }`}
-                title={`${item.label}`}
               >
-                {item.icon}
-                <span className="text-xs">{item.label}</span>
+                <item.icon className="w-5 h-5" />
+                <span className="text-sm font-medium">{item.label}</span>
               </Link>
             ))}
 
             {/* PROFILE */}
-            <div className="flex items-center gap-2">
-              <button onClick={handleProfileClick} disabled={userLoading}>
+            <div className="relative">
+              {userLoading ? (
+                <Skeleton className="w-10 h-10 rounded-full" />
+              ) : (
                 <Image
                   src={resolvedProfilePicUrl}
-                  alt="avatar"
-                  title="Profile"
-                  width={38}
-                  height={38}
-                  className="rounded-full border-red-400 border-2 shadow-lg hover:transition-transform hover:scale-105 active:opacity-80 cursor-pointer"
+                  alt="Profile"
+                  width={40}
+                  height={40}
+                  className="rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-red-400"
+                  onClick={handleProfileClick}
                 />
-              </button>
-
-              <button
-                title="Logout"
-                className="hover:bg-gray-100 rounded-lg p-3 ml-2 active:opacity-80 acitve:scale-95 transition cursor-pointer"
-                onClick={() => setShowModal(true)}
-              >
-                <LogOut className="w-5 h-5 text-gray-600" />
-              </button>
+              )}
             </div>
+
+            {/* LOGOUT BUTTON */}
+            <button
+              onClick={() => setShowModal(true)}
+              className="text-gray-600 hover:text-red-600 transition-colors hover:bg-red-50 p-2 rounded-full cursor-pionter"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </nav>
 
-          {/* MOBILE MENU */}
+          {/* MOBILE MENU BUTTON */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden"
+            className="md:hidden text-gray-600 hover:text-red-600"
           >
-            {mobileMenuOpen ? <X /> : <Menu />}
+            {mobileMenuOpen ? (
+              <X className="w-6 h-6" />
+            ) : (
+              <Menu className="w-6 h-6" />
+            )}
           </button>
         </div>
 
-        <PopupModal
-          title="Confirm Logout"
-          titleText="Are you sure you want to log out?"
-          actionText="Logout"
-          open={showModal}
-          onClose={() => setShowModal(false)}
-          onConfirm={() => {
-            setShowModal(false);
-            handleLogout(() => router.push(SIGNIN_PAGE_PATH));
-          }}
-        />
+        {/* 🔍 MOBILE SEARCH BAR */}
+        <div className="md:hidden pb-4 relative">
+          <div
+            className="relative"
+            onBlur={() => setTimeout(() => setOpenResults(false), 150)}
+          >
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setOpenResults(true);
+              }}
+              type="text"
+              placeholder="Search"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 text-gray-600 rounded-full focus:outline-none focus:border-red-400"
+            />
+
+            {/* MOBILE SEARCH RESULTS */}
+            {openResults && query.length >= 2 && (
+              <div className="absolute top-full mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-y-auto z-50">
+                {isFetching ? (
+                  <div className="px-4 py-3 text-gray-500 text-sm">
+                    Searching...
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map((u: any) => {
+                    const userSlug = u.slug || buildSlug(u.username, u.id);
+
+                    return (
+                      <SearchResultItem
+                        key={u.id}
+                        user={u}
+                        onClick={() => {
+                          router.push(`/profile/${userSlug}`);
+                          setQuery("");
+                          setOpenResults(false);
+                          setMobileMenuOpen(false);
+                        }}
+                      />
+                    );
+                  })
+                ) : (
+                  <div className="px-4 py-3 text-gray-500 text-sm">
+                    No results
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* MOBILE MENU */}
+        {mobileMenuOpen && (
+          <nav className="md:hidden pb-4 space-y-2">
+            {[
+              { href: MAIN_PAGE_PATH, icon: Home, label: "Home" },
+              { href: CONNECT_PAGE_PATH, icon: UserPlus, label: "Connect" },
+              {
+                href: MESSAGES_PAGE_PATH,
+                icon: MessageCircleMore,
+                label: "Messaging",
+              },
+              {
+                href: NOTIFICATION_PAGE_PATH,
+                icon: Bell,
+                label: "Notification",
+              },
+            ].map((item, i) => (
+              <Link
+                key={i}
+                href={item.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg ${
+                  currentPage === item.href
+                    ? "bg-red-100 text-red-600"
+                    : "text-gray-600 hover:bg-red-50 hover:text-red-600"
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+              </Link>
+            ))}
+
+            {/* MOBILE PROFILE LINK */}
+            <div
+              onClick={() => {
+                handleProfileClick();
+                setMobileMenuOpen(false);
+              }}
+              className={`flex items-center gap-3 px-4 py-2 rounded-lg cursor-pointer ${
+                currentPage === PROFILE_PAGE_PATH
+                  ? "bg-red-100 text-red-600"
+                  : "text-gray-600 hover:bg-red-50 hover:text-red-600"
+              }`}
+            >
+              {userLoading ? (
+                <Skeleton className="w-5 h-5 rounded-full" />
+              ) : (
+                <Image
+                  src={resolvedProfilePicUrl}
+                  alt="Profile"
+                  width={20}
+                  height={20}
+                  className="rounded-full object-cover"
+                />
+              )}
+              <span className="font-medium">Profile</span>
+            </div>
+
+            {/* MOBILE LOGOUT */}
+            <button
+              onClick={() => {
+                setShowModal(true);
+                setMobileMenuOpen(false);
+              }}
+              className="flex items-center gap-3 px-4 py-2 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 w-full"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Logout</span>
+            </button>
+          </nav>
+        )}
       </div>
+
+      <PopupModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={() => {
+          setShowModal(false);
+          handleLogout(() => router.push(SIGNIN_PAGE_PATH));
+        }}
+      />
     </header>
   );
 }

@@ -123,11 +123,11 @@ export async function fetchPosts({
 export async function createComment({
   postId,
   content,
-  parentId,
+  parentCommentId,
 }: {
   postId: string;
   content: string;
-  parentId?: string;
+  parentCommentId?: string;
 }) {
   const res = await fetch(COMMENT_API_PATH(postId), {
     method: "POST",
@@ -136,7 +136,7 @@ export async function createComment({
     },
     body: JSON.stringify({
       content,
-      parentId,
+      parentCommentId,
     }),
   });
 
@@ -174,7 +174,6 @@ export async function fetchReplies({
   cursor?: string | null;
 }) {
   const params = cursor ? `?cursor=${cursor}` : "";
-  // ✅ FIXED: Changed from fetch` to fetch(
   const res = await fetch(`${REPLIES_API_PATH(postId, commentId)}${params}`);
   if (!res.ok) throw new Error("Failed to fetch replies");
   return res.json();
