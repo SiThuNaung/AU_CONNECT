@@ -54,6 +54,9 @@ export const REPLIES_API_PATH = (postId: string, commentId: string) =>
 export const LIKE_POST_API_PATH = (postId: string) =>
   BASE_API_PATH + `/posts/${postId}/like`;
 
+export const VOTE_POST_API_PATH = (postId: string) =>
+  BASE_API_PATH + `/posts/${postId}/vote`;
+
 // api path for many posts
 export const POST_API_PATH = BASE_API_PATH + "/posts";
 
@@ -83,19 +86,19 @@ export const DELETE_EXPERIENCE_API_PATH =
 export const GET_EDUCATION_API_PATH = ME_API_PATH + "/get/educationFields";
 
 // Upload profile cover image
-export const UPLOAD_PROFILE_COVER_API_PATH = ME_API_PATH + '/upload/coverPic';
+export const UPLOAD_PROFILE_COVER_API_PATH = ME_API_PATH + "/upload/coverPic";
 
 // Upload profile image
-export const UPLOAD_PROFILE_PIC_API_PATH = ME_API_PATH + '/upload/profilePic';
+export const UPLOAD_PROFILE_PIC_API_PATH = ME_API_PATH + "/upload/profilePic";
 
 //Delete profile cover image
-export const DELETE_PROFILE_COVER_API_PATH = ME_API_PATH + '/delete/coverPic';
+export const DELETE_PROFILE_COVER_API_PATH = ME_API_PATH + "/delete/coverPic";
 
 // Delete profile image
-export const DELETE_PROFILE_PIC_API_PATH = ME_API_PATH + '/delete/profilePic';
+export const DELETE_PROFILE_PIC_API_PATH = ME_API_PATH + "/delete/profilePic";
 
 //Update about field of profile
-export const UPDATE_PROFILE_ABOUT_API_PATH = ME_API_PATH + '/update/about';
+export const UPDATE_PROFILE_ABOUT_API_PATH = ME_API_PATH + "/update/about";
 
 // ADD new education
 export const ADD_EDUCATION_API_PATH = ME_API_PATH + "/add/educationFields";

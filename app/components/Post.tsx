@@ -8,11 +8,11 @@ import PostMediaGrid from "./PostMediaGrid";
 import PostProfile from "./PostProfile";
 import PostAttachments from "./PostAttachments";
 import PostText from "./PostText";
-// import PostDetailsModal from "./PostDetailsModal";
 import { useToggleLike, useDeletePost } from "../profile/utils/fetchfunctions";
 import CreatePostModal from "./CreatePostModal";
 import ShareModal from "../profile/components/ShareModal";
 import { POST_DETAIL_PAGE_PATH } from "@/lib/constants";
+import PostPoll from "./PostPoll";
 
 export default function Post({
   user,
@@ -91,8 +91,26 @@ export default function Post({
         }}
       />
 
+      {post.title && (
+        <div className="px-5 mt-2 mb-3">
+          <h2 className="text-xl font-semibold text-gray-900">{post.title}</h2>
+        </div>
+      )}
+
       {post.content && <PostText text={post.content} />}
 
+      {/* Poll UI - separate component */}
+      {post.postType === "poll" && post.pollOptions && (
+        <PostPoll
+          postId={post.id}
+          options={post.pollOptions}
+          votes={post.pollVotes}
+          endsAt={post.pollEndsAt}
+          currentUserId={user?.id}
+        />
+      )}
+      {/*
+       */}
       {containsVideosOrImages && (
         <PostMediaGrid
           postInfo={{

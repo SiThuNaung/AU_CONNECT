@@ -119,6 +119,12 @@ model Post {
   shareCount    Int        @default(0)
   savedCount    Int        @default(0)
 
+  // Poll fields (only when postType === "poll")
+  pollOptions    String[]  // ["Option 1", "Option 2", "Option 3"]
+  pollEndsAt     DateTime? // When poll closes
+  pollVotes      Json?     // { "0": ["userId1"], "1": ["userId2", "userId3"] }
+  // pollSettings   Json?     // { multipleChoice: false } - template for future features
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -10,7 +10,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { setQueryClient } from "@/lib/services/uploadService";
+import { setInvalidatePosts } from "@/lib/services/uploadService";
 
 const mockEvents = [
   {
@@ -32,7 +32,9 @@ export default function Home() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    setQueryClient(queryClient);
+    setInvalidatePosts(() => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    });
   }, [queryClient]);
 
   // USER

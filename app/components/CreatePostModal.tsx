@@ -68,6 +68,11 @@ export default function CreatePostModal({
   const [existingMedia, setExistingMedia] = useState<PostMediaWithUrl[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Poll-specific state
+  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+  const [pollDuration, setPollDuration] = useState(7); // 7 days default
+  const [showBody, setShowBody] = useState(false);
+
   const editPostMutation = useEditPost();
 
   const resolvedProfilePicUrl = useResolvedMediaUrl(
@@ -80,11 +85,14 @@ export default function CreatePostModal({
     draft.mediaFileNames.length > 0 && newMedia.length === 0;
 
   const hasTextContent = postContent.trim().length > 0;
-  const hasTitle =
-    (postType === "discussion" || postType === "article") &&
-    title.trim().length > 0;
+  const hasTitle = postType === "article" && title.trim().length > 0;
   const hasMedia = newMedia.length > 0 || existingMedia.length > 0;
-  const canPost = hasTextContent || hasTitle || hasMedia;
+  const hasValidPoll =
+    postType === "poll" &&
+    title.trim().length > 0 &&
+    pollOptions.filter((opt) => opt.trim().length > 0).length >= 2;
+
+  const canPost = hasTextContent || hasTitle || hasMedia || hasValidPoll;
 
   // Total media count for carousel
   const totalMedia = [...existingMedia, ...newMedia];
@@ -99,7 +107,6 @@ export default function CreatePostModal({
 
       // Just store existing media as-is
       if (exisistingPost.media && exisistingPost.media.length > 0) {
-        // ensure required fields are present for existing media
         setExistingMedia(
           exisistingPost.media.map((m) => ({
             blobName: m.blobName,
@@ -182,7 +189,7 @@ export default function CreatePostModal({
 
         if (hasNewMedia) {
           // EDIT VIA BACKGROUND JOB
-          const jobId = useUploadStore.getState().addJob({
+          const jobData: any = {
             isEdit: true,
             postId: exisistingPost.id,
             postType,
@@ -190,46 +197,72 @@ export default function CreatePostModal({
             content: postContent,
             visibility: selectedVisibility,
             disableComments,
-            media: newMedia, // ONLY new files
-            existingMedia: existingMedia, // already uploaded
-          });
+            media: newMedia,
+            existingMedia: existingMedia,
+          };
 
+          // Only add poll fields if it's a poll
+          if (postType === "poll") {
+            jobData.pollOptions = pollOptions.filter(
+              (opt) => opt.trim() !== "",
+            );
+            jobData.pollDuration = pollDuration;
+          }
+
+          const jobId = useUploadStore.getState().addJob(jobData);
           setIsOpen(false);
           processEdit(jobId);
         } else {
           // EDIT WITHOUT UPLOAD
+          const editData: any = {
+            postType,
+            title,
+            content: postContent,
+            visibility: selectedVisibility,
+            commentsDisabled: disableComments,
+            media: existingMedia.map((m) => ({
+              blobName: m.blobName,
+              thumbnailBlobName: m.thumbnailBlobName,
+              type: m.type,
+              name: m.name,
+              mimetype: m.mimetype,
+              size: m.size,
+            })),
+          };
+
+          // Only add poll fields if it's a poll
+          if (postType === "poll") {
+            editData.pollOptions = pollOptions.filter(
+              (opt) => opt.trim() !== "",
+            );
+            editData.pollDuration = pollDuration;
+          }
+
           await editPostMutation.mutateAsync({
             postId: exisistingPost.id,
-            data: {
-              postType,
-              title,
-              content: postContent,
-              visibility: selectedVisibility,
-              commentsDisabled: disableComments,
-              media: existingMedia.map((m) => ({
-                blobName: m.blobName,
-                thumbnailBlobName: m.thumbnailBlobName,
-                type: m.type,
-                name: m.name,
-                mimetype: m.mimetype,
-                size: m.size,
-              })),
-            },
+            data: editData,
           });
 
           setIsOpen(false);
         }
       } else {
         // CREATE POST (ALWAYS JOB)
-        const jobId = useUploadStore.getState().addJob({
+        const jobData: any = {
           postType,
           title,
           content: postContent,
           visibility: selectedVisibility,
           disableComments,
           media: newMedia,
-        });
+        };
 
+        // Only add poll data if postType is poll
+        if (postType === "poll") {
+          jobData.pollOptions = pollOptions.filter((opt) => opt.trim() !== "");
+          jobData.pollDuration = pollDuration;
+        }
+
+        const jobId = useUploadStore.getState().addJob(jobData);
         setIsOpen(false);
         processUpload(jobId);
         clearDraft();
@@ -414,27 +447,144 @@ export default function CreatePostModal({
           </div>
         </div>
 
-        {(postType === "discussion" || postType === "article") && (
-          <div className="px-6 pt-4">
+        <div className="px-6 pt-4 pb-2 border-b border-neutral-100">
+          <div className="flex gap-2 p-1 bg-neutral-100 rounded-xl">
+            {[
+              { id: "media", label: "Standard", icon: "✨" },
+              { id: "article", label: "Article", icon: "📝" },
+              { id: "poll", label: "Poll", icon: "📊" },
+              { id: "opportunity", label: "Opportunity", icon: "💼" },
+            ].map((type) => (
+              <button
+                key={type.id}
+                onClick={() => setPostType(type.id)}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                  postType === type.id
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-neutral-600 hover:text-neutral-900"
+                }`}
+              >
+                <span>{type.icon}</span>
+                <span className="hidden sm:inline">{type.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {(postType === "article" || postType == "poll") && (
+          <div className="my-4 mx-5">
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full mb-3 px-4 py-3 border-t border-b border-neutral-200 text-gray-600 text-base outline-none focus:border-blue-500"
-              placeholder="Title..."
+              className="w-full px-4 py-3 border border-neutral-200 rounded-xl text-gray-700 text-base font-medium outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+              placeholder={
+                postType === "poll"
+                  ? "Add a question title... : "
+                  : "Add a title..."
+              }
             />
           </div>
         )}
 
-        <div className="px-6 pt-2 pb-2">
-          <textarea
-            value={postContent}
-            onChange={(e) => setPostContent(e.target.value)}
-            className={`w-full ${
-              totalMedia.length === 0 ? "h-44" : "h-25"
-            } text-gray-600 resize-none border-none outline-none text-base`}
-            placeholder="What's on your mind?"
-          />
-        </div>
+        {/* Show body button for polls */}
+        {postType === "poll" && !showBody && (
+          <div className="px-6 pb-5">
+            <button
+              onClick={() => setShowBody(true)}
+              className="text-sm text-blue-600 font-semibold hover:text-blue-700"
+            >
+              + Add body text (optional)
+            </button>
+          </div>
+        )}
+
+        {/* Content textarea */}
+        {(postType !== "poll" || showBody) && (
+          <div className="px-6 pt-2 pb-2">
+            <textarea
+              value={postContent}
+              onChange={(e) => setPostContent(e.target.value)}
+              className={`w-full ${
+                totalMedia.length === 0
+                  ? postType === "poll"
+                    ? "h-20"
+                    : "h-44"
+                  : postType === "poll"
+                    ? "h-20"
+                    : "h-24"
+              } text-gray-600 resize-none border-none outline-none text-base`}
+              placeholder="What's on your mind?"
+            />
+          </div>
+        )}
+
+        {postType === "poll" && (
+          <div className="px-6 pb-4">
+            {/* Poll Options */}
+            <div className="space-y-3 mb-4">
+              <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wide">
+                Poll Options
+              </p>
+              {pollOptions.map((opt, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="flex-1 relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 font-semibold">
+                      {i + 1}.
+                    </span>
+                    <input
+                      value={opt}
+                      onChange={(e) => {
+                        const next = [...pollOptions];
+                        next[i] = e.target.value;
+                        setPollOptions(next);
+                      }}
+                      placeholder={`Option ${i + 1}`}
+                      className="w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-xl text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+                    />
+                  </div>
+                  {pollOptions.length > 2 && (
+                    <button
+                      onClick={() => {
+                        setPollOptions((p) => p.filter((_, idx) => idx !== i));
+                      }}
+                      className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg transition"
+                      title="Remove option"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              {pollOptions.length < 10 && (
+                <button
+                  onClick={() => setPollOptions((p) => [...p, ""])}
+                  className="w-full py-2.5 border-2 border-dashed border-neutral-300 rounded-xl text-sm text-blue-600 font-semibold hover:border-blue-400 hover:bg-blue-50 transition"
+                >
+                  + Add Option
+                </button>
+              )}
+            </div>
+
+            {/* Poll Duration */}
+            <div className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl border border-neutral-200">
+              <span className="text-sm font-medium text-neutral-700">
+                Poll Duration
+              </span>
+              <select
+                value={pollDuration}
+                onChange={(e) => setPollDuration(+e.target.value)}
+                className="px-4 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition bg-white"
+              >
+                <option value={1}>1 day</option>
+                <option value={3}>3 days</option>
+                <option value={7}>1 week</option>
+                <option value={14}>2 weeks</option>
+                <option value={30}>1 month</option>
+              </select>
+            </div>
+          </div>
+        )}
 
         {hasDraftFiles && !editMode && (
           <p className="text-gray-400 mb-5 px-5">
@@ -594,43 +744,44 @@ export default function CreatePostModal({
             }}
           />
 
-          <div className="flex items-center gap-2 text-neutral-500 text-sm bg-neutral-50 rounded-2xl p-4 border border-neutral-200">
-            <span className="text-xs font-semibold text-neutral-600 mr-2">
-              Add to your post
-            </span>
+          {postType !== "poll" && (
+            <div className="flex items-center gap-2 text-neutral-500 text-sm bg-neutral-50 rounded-2xl p-4 border border-neutral-200">
+              <span className="text-xs font-semibold text-neutral-600 mr-2">
+                Add to your post
+              </span>
 
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
-            >
-              <ImageIcon className="h-5 w-5 text-green-600" />
-            </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
+              >
+                <ImageIcon className="h-5 w-5 text-green-600" />
+              </button>
 
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
-            >
-              <Video className="h-5 w-5 text-red-600" />
-            </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
+              >
+                <Video className="h-5 w-5 text-red-600" />
+              </button>
 
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
-            >
-              <Paperclip className="h-5 w-5 text-blue-600" />
-            </button>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
+              >
+                <Paperclip className="h-5 w-5 text-blue-600" />
+              </button>
 
-            <button
-              onClick={() => {
-                window.alert("Feature not yet implemented");
-              }}
-              className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
-            >
-              <UserPlus className="h-5 w-5 text-purple-600" />
-            </button>
-          </div>
+              <button
+                onClick={() => {
+                  window.alert("Feature not yet implemented");
+                }}
+                className="p-2.5 rounded-xl hover:bg-white hover:shadow-md transition"
+              >
+                <UserPlus className="h-5 w-5 text-purple-600" />
+              </button>
+            </div>
+          )}
         </div>
-
         <div className="flex items-center justify-between px-6 py-4 border-t bg-neutral-50">
           <div className="flex items-center gap-3">
             <input

@@ -14,6 +14,10 @@ export interface UploadJob {
   // NEW MEDIA ONLY (files)
   media: MediaItem[];
 
+  // poll
+  pollOptions?: string[];
+  pollDuration?: number;
+
   // edit-only
   isEdit?: boolean;
   postId?: string;

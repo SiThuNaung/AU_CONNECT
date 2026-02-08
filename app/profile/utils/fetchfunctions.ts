@@ -14,6 +14,7 @@ import {
   POST_API_PATH,
   REPLIES_API_PATH,
   SINGLE_POST_API_PATH,
+  VOTE_POST_API_PATH,
 } from "@/lib/constants";
 import PostsPage from "@/types/PostsPage";
 
@@ -69,8 +70,13 @@ export async function handleCreatePost(
     size: number;
   }[],
   setIsOpen: (state: boolean) => void,
+  // poll params
+  pollOptions?: string[],
+  pollDuration?: number,
 ) {
   try {
+    const isPoll = postType === "poll";
+
     const res = await fetch(POST_API_PATH, {
       method: "POST",
       cache: "no-store",
@@ -82,6 +88,8 @@ export async function handleCreatePost(
         visibility: selectedVisibility,
         commentsDisabled: disableComments,
         media: uploadedMedia,
+        pollOptions: isPoll ? pollOptions : undefined,
+        pollDuration: isPoll ? pollDuration : undefined,
       }),
     });
 
@@ -117,6 +125,102 @@ export async function fetchPosts({
   }
 
   return await res.json();
+}
+
+export async function deletePost(postId: string) {
+  const res = await fetch(`${POST_API_PATH}?postId=${postId}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error?.error || "Failed to toggle like");
+  }
+
+  return res.json();
+}
+
+export function useDeletePost() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deletePost,
+    onSuccess: (_, postId) => {
+      // Update the infinite query structure
+      queryClient.setQueryData(["posts"], (oldData: any) => {
+        if (!oldData?.pages) return oldData;
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: any) => ({
+            ...page,
+            posts: page.posts.filter((post: any) => post.id !== postId),
+          })),
+        };
+      });
+    },
+  });
+}
+
+// post edit function
+export async function editPost({
+  postId,
+  data,
+}: {
+  postId: string;
+  data: any; // or use your CreatePostSchema type
+}) {
+  const res = await fetch(`${POST_API_PATH}?postId=${postId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data), // Include the updated post data
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error?.error || "Failed to edit post");
+  }
+
+  return res.json();
+}
+
+export function useEditPost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: editPost,
+    onSuccess: (updatedPost) => {
+      // ✅ Update the post in the infinite query cache
+      queryClient.setQueryData(["posts"], (oldData: any) => {
+        if (!oldData?.pages) return oldData;
+
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: any) => ({
+            ...page,
+            posts: page.posts.map((post: any) =>
+              post.id === updatedPost.id ? updatedPost : post,
+            ),
+          })),
+        };
+      });
+    },
+  });
+}
+
+export async function fetchSinglePost(postId: string) {
+  const res = await fetch(SINGLE_POST_API_PATH(postId));
+
+  if (!res.ok) throw new Error("Failed to fetch post");
+  return res.json();
+}
+
+export function usePost(postId: string) {
+  return useQuery({
+    queryKey: ["post", postId],
+    queryFn: () => fetchSinglePost(postId),
+    enabled: !!postId, // safety
+  });
 }
 
 // calls /posts/:postId/comments
@@ -264,98 +368,77 @@ export async function callPostLikeUpdate({ postId }: { postId: string }) {
   return res.json();
 }
 
-export async function deletePost(postId: string) {
-  const res = await fetch(`${POST_API_PATH}?postId=${postId}`, {
-    method: "DELETE",
+// calls /posts/:postId/vote
+export async function voteInPoll(postId: string, optionIndex: number) {
+  const res = await fetch(VOTE_POST_API_PATH(postId), {
+    method: "POST",
     headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ optionIndex }),
   });
 
   if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error?.error || "Failed to toggle like");
+    const err = await res.json();
+    throw new Error(err.error || "Vote failed");
   }
 
-  return res.json();
+  return res.json() as Promise<{
+    success: true;
+    pollVotes: Record<string, string[]>;
+  }>;
 }
 
-export function useDeletePost() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: deletePost,
-    onSuccess: (_, postId) => {
-      // Update the infinite query structure
-      queryClient.setQueryData(["posts"], (oldData: any) => {
-        if (!oldData?.pages) return oldData;
-
-        return {
-          ...oldData,
-          pages: oldData.pages.map((page: any) => ({
-            ...page,
-            posts: page.posts.filter((post: any) => post.id !== postId),
-          })),
-        };
-      });
-    },
-  });
-}
-
-// post edit function
-export async function editPost({
-  postId,
-  data,
-}: {
-  postId: string;
-  data: any; // or use your CreatePostSchema type
-}) {
-  const res = await fetch(`${POST_API_PATH}?postId=${postId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data), // Include the updated post data
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error?.error || "Failed to edit post");
-  }
-
-  return res.json();
-}
-
-export function useEditPost() {
+export function useVoteInPoll(postId: string, currentUserId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: editPost,
-    onSuccess: (updatedPost) => {
-      // ✅ Update the post in the infinite query cache
-      queryClient.setQueryData(["posts"], (oldData: any) => {
-        if (!oldData?.pages) return oldData;
+    mutationFn: (optionIndex: number) => voteInPoll(postId, optionIndex),
+
+    onMutate: async (optionIndex) => {
+      await queryClient.cancelQueries({ queryKey: ["posts"] });
+
+      const previousPosts = queryClient.getQueryData<any>(["posts"]);
+
+      queryClient.setQueryData(["posts"], (old: any) => {
+        if (!old?.pages) return old;
 
         return {
-          ...oldData,
-          pages: oldData.pages.map((page: any) => ({
+          ...old,
+          pages: old.pages.map((page: any) => ({
             ...page,
-            posts: page.posts.map((post: any) =>
-              post.id === updatedPost.id ? updatedPost : post,
-            ),
+            posts: page.posts.map((post: any) => {
+              if (post.id !== postId) return post;
+
+              const updatedVotes = { ...(post.pollVotes || {}) };
+
+              // remove user from all options
+              Object.keys(updatedVotes).forEach((key) => {
+                updatedVotes[key] = updatedVotes[key].filter(
+                  (id: string) => id !== currentUserId,
+                );
+              });
+
+              // add user to selected option
+              updatedVotes[optionIndex] = [
+                ...(updatedVotes[optionIndex] || []),
+                currentUserId,
+              ];
+
+              return {
+                ...post,
+                pollVotes: updatedVotes,
+              };
+            }),
           })),
         };
       });
+
+      return { previousPosts };
     },
-  });
-}
 
-export async function fetchSinglePost(postId: string) {
-  const res = await fetch(SINGLE_POST_API_PATH(postId));
-
-  if (!res.ok) throw new Error("Failed to fetch post");
-  return res.json();
-}
-
-export function usePost(postId: string) {
-  return useQuery({
-    queryKey: ["post", postId],
-    queryFn: () => fetchSinglePost(postId),
-    enabled: !!postId, // safety
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previousPosts) {
+        queryClient.setQueryData(["posts"], ctx.previousPosts);
+      }
+    },
   });
 }

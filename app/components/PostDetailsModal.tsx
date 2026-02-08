@@ -1,3 +1,4 @@
+"use client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import CommentInput from "./CommentInput";
@@ -22,7 +23,7 @@ export default function PostDetailsModal({
   onClose,
 }: PostDetailsModalTypes) {
   const mediaList = media ?? [];
-  const hasMedia = mediaList.length > 0;
+  const hasMedia = mediaList.length > 0 || postInfo.postType === "poll";
   const avatarUrl = useResolvedMediaUrl(
     postInfo.profilePic,
     "/default_profile.jpg",
@@ -75,9 +76,41 @@ export default function PostDetailsModal({
         } h-[90vh] rounded-lg overflow-hidden flex`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* LEFT: Media carousel */}
+        {/* LEFT: Media / Content Side */}
+
+        {postInfo.postType === "poll" ? (
+          /* 
+
+          <PostPollView
+            options={postInfo.pollOptions ?? []}
+            votes={postInfo.pollVotes}
+            endsAt={postInfo.pollEndsAt}
+          />
+            */
+
+          <MediaCarousel
+            postType={postInfo.postType}
+            pollOptions={postInfo.pollOptions ?? []}
+            pollVotes={postInfo.pollVotes}
+            pollEndsAt={postInfo.pollEndsAt}
+            mediaList={mediaList}
+            clickedIndex={clickedIndex}
+            onClose={onClose}
+          />
+        ) : (
+          hasMedia && (
+            <MediaCarousel
+              postType={postInfo.postType ?? "media"}
+              mediaList={mediaList}
+              clickedIndex={clickedIndex}
+              onClose={onClose}
+            />
+          )
+        )}
 
         {/* show media carousel only if the post contains images */}
+        {/* 
+
         {hasMedia && (
           <MediaCarousel
             mediaList={mediaList}
@@ -85,6 +118,7 @@ export default function PostDetailsModal({
             onClose={onClose}
           />
         )}
+            */}
 
         {/* RIGHT: Post details + comments */}
         <div

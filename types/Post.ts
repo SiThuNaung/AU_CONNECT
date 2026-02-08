@@ -34,6 +34,13 @@ type PostType = {
       }[]
     | null;
 
+  pollOptions: string[] | null;
+  pollEndsAt: Date | undefined;
+  pollVotes?: Record<string, string[]>;
+  // pollSettings?: {
+  //   multipleChoice?: boolean;
+  // } | null;
+
   isLiked?: boolean;
   likeCount?: number;
   commentCount?: number;
