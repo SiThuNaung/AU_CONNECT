@@ -15,8 +15,10 @@ import {
   REPLIES_API_PATH,
   SINGLE_POST_API_PATH,
   VOTE_POST_API_PATH,
+  LINK_PREVIEW_API_PATH,
 } from "@/lib/constants";
 import PostsPage from "@/types/PostsPage";
+import LinkEmbed from "@/types/LinkEmbeds";
 
 // calls /me
 export async function fetchUser() {
@@ -70,6 +72,8 @@ export async function handleCreatePost(
     size: number;
   }[],
   setIsOpen: (state: boolean) => void,
+  // links
+  links?: LinkEmbed[],
   // poll params
   pollOptions?: string[],
   pollDuration?: number,
@@ -87,6 +91,7 @@ export async function handleCreatePost(
         content: postContent,
         visibility: selectedVisibility,
         commentsDisabled: disableComments,
+        links: links,
         media: uploadedMedia,
         pollOptions: isPoll ? pollOptions : undefined,
         pollDuration: isPoll ? pollDuration : undefined,
@@ -442,3 +447,31 @@ export function useVoteInPoll(postId: string, currentUserId: string) {
     },
   });
 }
+
+type LinkPreviewResponse = {
+  title?: string;
+  description?: string;
+  image?: string;
+  siteName?: string;
+  favicon?: string;
+};
+
+export const useFetchLinkPreview = () => {
+  return useMutation({
+    mutationFn: async (url: string): Promise<LinkPreviewResponse> => {
+      const response = await fetch(LINK_PREVIEW_API_PATH, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch link preview");
+      }
+
+      return response.json();
+    },
+  });
+};

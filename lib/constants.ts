@@ -66,6 +66,8 @@ export const SINGLE_POST_API_PATH = (postId: string) => {
 };
 export const SHARE_POST_API_PATH = (postId: string) =>
   `${BASE_API_PATH}/posts/${postId}/share`;
+export const LINK_PREVIEW_API_PATH = BASE_API_PATH + `/link-preview`;
+
 // GET all my experiences
 export const GET_EXPERIENCE_API_PATH = ME_API_PATH + "/get/experienceFields";
 

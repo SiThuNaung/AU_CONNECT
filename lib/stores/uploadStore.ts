@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { MediaItem } from "@/types/Media";
 import { PostMediaWithUrl } from "@/types/PostMedia";
+import LinkEmbed from "@/types/LinkEmbeds";
 
 export interface UploadJob {
   // core
@@ -13,6 +14,9 @@ export interface UploadJob {
 
   // NEW MEDIA ONLY (files)
   media: MediaItem[];
+
+  // links
+  links?: LinkEmbed[];
 
   // poll
   pollOptions?: string[];

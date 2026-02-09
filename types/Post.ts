@@ -1,3 +1,5 @@
+import LinkEmbed from "./LinkEmbeds";
+
 type PostType = {
   // ---------- core ----------
   id: string;
@@ -33,6 +35,8 @@ type PostType = {
         size?: number;
       }[]
     | null;
+
+  links?: LinkEmbed[] | null;
 
   pollOptions: string[] | null;
   pollEndsAt: Date | undefined;

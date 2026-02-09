@@ -12,7 +12,6 @@ import {
   X,
   MessageCircleMore,
   LogOut,
-  UserRound,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -251,7 +250,7 @@ export default function Header() {
             {/* LOGOUT BUTTON */}
             <button
               onClick={() => setShowModal(true)}
-              className="text-gray-600 hover:text-red-600 transition-colors hover:bg-red-50 p-2 rounded-full cursor-pionter"
+              className="cursor-pointer text-gray-600 hover:text-red-600 transition-colors hover:bg-red-50 p-2 rounded-full cursor-pionter"
             >
               <LogOut className="w-5 h-5" />
             </button>

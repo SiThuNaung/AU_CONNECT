@@ -13,6 +13,7 @@ import CreatePostModal from "./CreatePostModal";
 import ShareModal from "../profile/components/ShareModal";
 import { POST_DETAIL_PAGE_PATH } from "@/lib/constants";
 import PostPoll from "./PostPoll";
+import LinkEmbedPreview from "./Linkembedpreview";
 
 export default function Post({
   user,
@@ -28,7 +29,6 @@ export default function Post({
   }
 
   const router = useRouter();
-  // Navigate to post detail page
   const openPostModal = (postId: string, index: number) => {
     router.push(POST_DETAIL_PAGE_PATH(postId, index));
   };
@@ -56,7 +56,6 @@ export default function Post({
     );
   }
 
-  // If post is missing (should not happen), avoid crash
   if (!post) return null;
 
   const videosAndImages = post.media?.filter(
@@ -99,7 +98,7 @@ export default function Post({
 
       {post.content && <PostText text={post.content} />}
 
-      {/* Poll UI - separate component */}
+      {/* Poll UI */}
       {post.postType === "poll" && post.pollOptions && (
         <PostPoll
           postId={post.id}
@@ -109,8 +108,8 @@ export default function Post({
           currentUserId={user?.id}
         />
       )}
-      {/*
-       */}
+
+      {/* Media Grid */}
       {containsVideosOrImages && (
         <PostMediaGrid
           postInfo={{
@@ -127,6 +126,7 @@ export default function Post({
         />
       )}
 
+      {/* File Attachments */}
       {attachments && attachments.length > 0 && (
         <PostAttachments
           media={attachments}
@@ -134,7 +134,12 @@ export default function Post({
         />
       )}
 
-      {/* likes, comments and share counts */}
+      {/* Link Embeds - NEW */}
+      {post.links && post.links.length > 0 && (
+        <LinkEmbedPreview links={post.links} editable={false} />
+      )}
+
+      {/* Likes, comments and share counts */}
       <div className="px-4 py-2">
         <div className="flex flex-row justify-end">
           <span className="text-sm text-gray-500 mr-3 cursor-pointer hover:text-blue-500 hover:underline hover:underline-offset-2">
@@ -152,6 +157,7 @@ export default function Post({
         </div>
       </div>
 
+      {/* Action Buttons */}
       <div className="flex items-center justify-evenly py-4 border-t border-gray-200">
         <button
           className={`flex items-center gap-2 cursor-pointer disabled:opacity-50 ${

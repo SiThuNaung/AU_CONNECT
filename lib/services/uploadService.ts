@@ -68,6 +68,7 @@ export async function processUpload(jobId: string) {
       job.disableComments,
       uploadedMedia,
       () => {},
+      job.links,
       job.pollOptions,
       job.pollDuration,
     );
@@ -141,7 +142,7 @@ export async function processEdit(jobId: string) {
         content: job.content,
         visibility: job.visibility,
         commentsDisabled: job.disableComments,
-
+        links: job.links,
         media: finalMedia,
         ...(job.postType === "poll" && {
           pollOptions: job.pollOptions,
@@ -153,9 +154,7 @@ export async function processEdit(jobId: string) {
     store.updateJobProgress(jobId, 100);
     store.updateJobStatus(jobId, "complete");
 
-    if (queryClientInstance) {
-      await queryClientInstance.invalidateQueries({ queryKey: ["posts"] });
-    }
+    invalidatePostsSafe();
 
     setTimeout(() => store.removeJob(jobId), 3000);
   } catch (err) {
