@@ -29,6 +29,15 @@ export default function PostDetailsModal({
     "content",
   );
 
+  const handleJobApply = (
+    allowedExternalApply: boolean,
+    externalApplyLink?: string,
+  ) => {
+    if (allowedExternalApply && externalApplyLink) {
+      window.open(externalApplyLink, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const mediaList = media ?? [];
   const isJobPost = postInfo.postType === "job_post";
   const hasMedia = mediaList.length > 0 || postInfo.postType === "poll";
@@ -106,6 +115,12 @@ export default function PostDetailsModal({
               <JobPostDetailView
                 jobData={postInfo.jobPost}
                 isOwner={postInfo.userId === currentUserId}
+                onApply={() =>
+                  handleJobApply(
+                    postInfo.jobPost?.allowExternalApply ?? false,
+                    postInfo.jobPost?.applyUrl ?? "",
+                  )
+                }
               />
             ) : postInfo.postType === "poll" ? (
               <MediaCarousel

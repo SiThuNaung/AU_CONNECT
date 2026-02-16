@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertTriangle } from "lucide-react";
 import parseDate from "../profile/utils/parseDate";
 import JobDraft from "@/types/JobDraft";
 
@@ -145,15 +146,15 @@ export default function JobPostDetailView({
           </div>
 
           {/* CONTENT CARD */}
-          <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-8 space-y-10 mt-5">
+          <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-8 space-y-10 mb-5 mt-5">
             {jobData.jobDetails && (
               <div className="space-y-1">
                 <h2 className="text-sm font-semibold text-neutral-900 uppercase tracking-wide">
                   About this Job
                 </h2>
-                <p className="text-neutral-700 whitespace-pre-wrap leading-relaxed">
+                <p className="min-w-0 break-words whitespace-pre-wrap text-neutral-700 leading-relaxed">
                   {jobData.jobDetails}
-                </p>
+                </p>{" "}
               </div>
             )}
 
@@ -177,7 +178,33 @@ export default function JobPostDetailView({
             )}
           </div>
 
-          <div className="flex flex-row mt-6 pb-6">
+          {/* External Link Warning */}
+          {!isOwner && jobData.applyUrl && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-4 mb-6">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-amber-900 mb-1">
+                    External Application
+                  </p>
+                  <p className="text-sm text-amber-800 mb-2">
+                    This job application will redirect you to an external
+                    website. Please verify the URL before proceeding.
+                  </p>
+                  <div className="bg-white rounded px-3 py-2 border border-amber-300">
+                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">
+                      Application URL
+                    </p>
+                    <p className="text-sm text-neutral-900 font-mono break-all">
+                      {jobData.applyUrl}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-row mt-6 mb-5">
             <button className="mr-3 cursor-pointer hover:bg-gray-800 bg-black rounded-lg ml-5 py-2 px-6 text-white">
               {isSaved ? "Saved" : "Save"}
             </button>
@@ -187,7 +214,10 @@ export default function JobPostDetailView({
                 View Applicants
               </button>
             ) : (
-              <button className="cursor-pointer rounded-lg bg-blue-600 py-2 px-4 text-white">
+              <button
+                onClick={onApply}
+                className="cursor-pointer rounded-lg bg-blue-600 py-2 px-4 text-white"
+              >
                 Apply
               </button>
             )}

@@ -96,7 +96,7 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
   }, [postMenuDropDownOpen]);
 
   return (
-    <div onClick={onTitleClick} className="cursor-pointer p-6">
+    <div className="p-6">
       {/* Header */}
       <div className="flex justify-between items-start mb-3">
         <span className="font-semibold bg-gray-100 text-black px-2 py-1 rounded">
@@ -140,7 +140,10 @@ export const JobPostCard: React.FC<JobPostCardProps> = ({
       </div>
 
       {/* Title */}
-      <h2 className="cursor-pointer hover:underline text-xl font-semibold text-black">
+      <h2
+        onClick={onTitleClick}
+        className="cursor-pointer hover:underline text-xl font-semibold text-black"
+      >
         {job.jobTitle}
       </h2>
 

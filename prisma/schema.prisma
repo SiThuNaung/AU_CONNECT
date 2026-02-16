@@ -350,12 +350,13 @@ model JobApplication {
   applicantId String @db.ObjectId
   applicant   User   @relation(fields: [applicantId], references: [id])
 
-  message   String?
-  resumeUrl String?
+  resumeLetter   String?
+  resumeUrl String
 
   status ApplicationStatus @default(APPLIED)
 
   createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
   @@unique([jobPostId, applicantId])
   @@index([jobPostId])
