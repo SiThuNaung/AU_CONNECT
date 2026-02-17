@@ -38,7 +38,7 @@ export async function POST(
         },
       });
 
-      // 🔔 Create notification (if not sharing own post)
+      //  Create notification (if not sharing own post)
       if (post.userId !== userId) {
         await createNotification({
           userId: post.userId,   // post owner

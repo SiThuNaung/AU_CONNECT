@@ -12,6 +12,7 @@ import {
 
 import { timeAgo } from "@/lib/timeAgo";
 import { buildSlug } from "@/app/profile/utils/buildSlug";
+import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 
 type NotificationType =
   | "CONNECTION_REQUEST"
@@ -27,9 +28,7 @@ type Notification = {
   type: NotificationType;
   isRead: boolean;
   createdAt: string;
-
-  entityId?: string; 
-
+  entityId?: string;
   fromUser?: {
     id: string;
     username: string;
@@ -46,6 +45,25 @@ const notificationMessages: Record<NotificationType, string> = {
   POST_SHARED: "shared your post",
   POST_VOTED: "voted on your poll",
 };
+
+function NotificationAvatar({
+  profilePic,
+  username,
+}: {
+  profilePic?: string;
+  username?: string;
+}) {
+  const avatarUrl = useResolvedMediaUrl(profilePic, "/default_profile.jpg");
+
+  return (
+    <Image
+      src={avatarUrl}
+      alt={username || "User"}
+      fill
+      className="object-cover"
+    />
+  );
+}
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -70,42 +88,39 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   const handleClick = async (notification: Notification) => {
-  // Mark as read
-  if (!notification.isRead) {
-    await markNotificationRead(notification.id);
-    setNotifications((prev) =>
-      prev.map((n) =>
-        n.id === notification.id ? { ...n, isRead: true } : n
-      )
-    );
-  }
-
-  // CONNECTION notifications → go to profile
-  if (
-    notification.type === "CONNECTION_REQUEST" ||
-    notification.type === "CONNECTION_ACCEPTED"
-  ) {
-    if (notification.fromUser?.id) {
-      const slug = buildSlug(
-        notification.fromUser.username || "",
-        notification.fromUser.id
+    if (!notification.isRead) {
+      await markNotificationRead(notification.id);
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === notification.id ? { ...n, isRead: true } : n,
+        ),
       );
-      router.push(`/profile/${slug}`);
     }
-    return;
-  }
 
-  // POST + COMMENT notifications → go to post page
-  if (notification.entityId) {
-    router.push(`/posts/${notification.entityId}`);
-  }
-};
+    if (
+      notification.type === "CONNECTION_REQUEST" ||
+      notification.type === "CONNECTION_ACCEPTED"
+    ) {
+      if (notification.fromUser?.id) {
+        const slug = buildSlug(
+          notification.fromUser.username || "",
+          notification.fromUser.id,
+        );
+        router.push(`/profile/${slug}`);
+      }
+      return;
+    }
 
+    if (notification.entityId) {
+      router.push(`/posts/${notification.entityId}`);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-white">
       <div className="h-full overflow-y-auto flex flex-col items-center pt-6 px-4">
-        <section className="w-full max-w-2xl">
+        <section className="w-full sm:w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2">
+
           {/* HEADER */}
           <div className="flex items-center gap-3 mb-6">
             <h2 className="text-lg font-bold text-neutral-800">
@@ -123,7 +138,7 @@ export default function NotificationsPage() {
                 onClick={async () => {
                   await markAllNotificationsRead();
                   setNotifications((prev) =>
-                    prev.map((n) => ({ ...n, isRead: true }))
+                    prev.map((n) => ({ ...n, isRead: true })),
                   );
                 }}
                 className="ml-auto text-sm text-blue-600 hover:underline font-semibold"
@@ -135,9 +150,7 @@ export default function NotificationsPage() {
 
           {/* LOADING */}
           {loading && (
-            <p className="text-neutral-500 text-sm">
-              Loading notifications...
-            </p>
+            <p className="text-neutral-500 text-sm">Loading notifications...</p>
           )}
 
           {/* EMPTY STATE */}
@@ -161,30 +174,39 @@ export default function NotificationsPage() {
                 <div
                   key={notification.id}
                   onClick={() => handleClick(notification)}
-                  className={`group relative overflow-hidden rounded-2xl p-6 border cursor-pointer transition-all duration-300 ${
-                    notification.isRead
-                      ? "bg-neutral-50 border-neutral-200 hover:shadow-lg"
-                      : "bg-blue-50 border-blue-200 hover:shadow-lg"
-                  }`}
+                  className={`group relative overflow-hidden rounded-2xl p-6 border cursor-pointer
+                    hover:shadow-xl hover:scale-[1.02] transition-all duration-300
+                    ${
+                      notification.isRead
+                        ? "bg-linear-to-br from-neutral-50 to-neutral-100/50 border-neutral-200/50"
+                        : "bg-linear-to-br from-blue-50 to-blue-100/50 border-blue-200/50"
+                    }`}
                 >
                   <div className="flex items-center gap-4">
+
                     {/* AVATAR */}
-                    <div className="relative">
-                      <div className="relative h-14 w-14 rounded-xl overflow-hidden">
-                        <Image
-                          src={fromUser?.profilePic || "/default_profile.jpg"}
-                          alt={fromUser?.username || "User"}
-                          fill
-                          className="object-cover"
+                    <div className="relative flex-shrink-0">
+                      <div
+                        className={`relative h-14 w-14 rounded-2xl overflow-hidden ring-2 transition-all
+                          ${
+                            notification.isRead
+                              ? "ring-neutral-200 group-hover:ring-blue-400"
+                              : "ring-blue-300 group-hover:ring-blue-500"
+                          }`}
+                      >
+                        <NotificationAvatar
+                          profilePic={fromUser?.profilePic}
+                          username={fromUser?.username}
                         />
                       </div>
+
                       {!notification.isRead && (
                         <div className="absolute -top-1 -right-1 h-3 w-3 bg-blue-500 rounded-full border-2 border-white" />
                       )}
                     </div>
 
                     {/* TEXT */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 space-y-1">
                       <p className="text-sm font-semibold text-neutral-900">
                         <span className="font-bold">
                           {fromUser?.username || "Someone"}
@@ -192,15 +214,17 @@ export default function NotificationsPage() {
                         {notificationMessages[notification.type]}
                       </p>
 
-                      <span className="text-xs text-neutral-500 mt-1 block">
+                      <span className="text-xs text-neutral-500 block">
                         {timeAgo(notification.createdAt)}
                       </span>
                     </div>
+
                   </div>
                 </div>
               );
             })}
           </div>
+
         </section>
       </div>
     </main>

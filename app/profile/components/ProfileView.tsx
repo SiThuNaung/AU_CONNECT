@@ -28,6 +28,7 @@ import { fetchProfilePosts } from "../utils/fetchProfilePosts";
 
 import ConnectionsModal from "./ConnectionsModal";
 import { useRouter } from "next/navigation";
+import PopupModal from "@/app/components/PopupModal";
 
 export default function ProfileView({
   user,
@@ -91,6 +92,8 @@ export default function ProfileView({
   const [openConnectionsModal, setOpenConnectionsModal] = useState(false);
   const [connectionsList, setConnectionsList] = useState<any[]>([]);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
+
+  const [openRemoveModal, setOpenRemoveModal] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1500);
@@ -319,10 +322,6 @@ export default function ProfileView({
   }
 
   async function handleRemoveConnection() {
-    if (!confirm("Are you sure you want to remove this connection?")) {
-      return;
-    }
-
     try {
       setConnectError(null);
       setConnectLoading(true);
@@ -338,7 +337,6 @@ export default function ProfileView({
         throw new Error(json?.error || "Failed to remove connection");
       }
 
-      // success => reset to not connected state
       setIsConnected(false);
     } catch (e: unknown) {
       setConnectError(e instanceof Error ? e.message : "Server error");
@@ -434,7 +432,7 @@ export default function ProfileView({
                         {isConnected ? (
                           // CONNECTED
                           <button
-                            onClick={handleRemoveConnection}
+                            onClick={() => setOpenRemoveModal(true)}
                             disabled={connectLoading}
                             className="px-4 py-2 rounded-lg shadow text-white bg-red-500 hover:bg-red-600 disabled:opacity-50"
                           >
@@ -454,7 +452,7 @@ export default function ProfileView({
                             <button
                               onClick={handleDeclineIncoming}
                               disabled={connectLoading}
-                              className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                              className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50"
                             >
                               Decline
                             </button>
@@ -757,6 +755,18 @@ export default function ProfileView({
         user={user}
         resolvedCoverPhotoUrl={resolvedCoverPhotoUrl}
         onCoverPhotoChanged={(newCover: string) => setCoverPhotoValue(newCover)}
+      />
+
+      <PopupModal
+        open={openRemoveModal}
+        onClose={() => setOpenRemoveModal(false)}
+        onConfirm={() => {
+          setOpenRemoveModal(false);
+          handleRemoveConnection();
+        }}
+        title="Remove Connection"
+        titleText="Are you sure you want to remove this connection? You will need to send a new request to connect again."
+        actionText="Remove"
       />
     </>
   );
