@@ -8,10 +8,12 @@ interface JobPostContentViewProps {
   jobData: JobDraft;
   applicantCount?: number;
   hasApplied?: boolean;
+  applicationStatus?: "APPLIED" | "SHORTLISTED" | "REJECTED" | null;
   isSaved?: boolean;
   isOwner: boolean;
   onApply?: () => void;
   onSave?: () => void;
+  onViewApplicants?: () => void;
 }
 
 const employmentTypeLabels = {
@@ -37,10 +39,12 @@ export default function JobPostDetailView({
   jobData,
   applicantCount = 0,
   hasApplied = false,
+  applicationStatus,
   isSaved = false,
   isOwner,
   onApply,
   onSave,
+  onViewApplicants,
 }: JobPostContentViewProps) {
   const formatSalary = () => {
     const currency = jobData.salaryCurrency || "USD";
@@ -205,21 +209,34 @@ export default function JobPostDetailView({
           )}
 
           <div className="flex flex-row mt-6 mb-5">
-            <button className="mr-3 cursor-pointer hover:bg-gray-800 bg-black rounded-lg ml-5 py-2 px-6 text-white">
+            <button
+              disabled={isSaved}
+              onClick={onSave}
+              className="mr-3 cursor-pointer hover:bg-gray-800 bg-black rounded-lg ml-5 py-2 px-6 text-white"
+            >
               {isSaved ? "Saved" : "Save"}
             </button>
 
             {isOwner ? (
-              <button className="cursor-pointer rounded-lg bg-white hover:bg-neutral-100 py-2 px-4 text-neutral-800 border border-neutral-400">
+              <button
+                onClick={onViewApplicants}
+                className="cursor-pointer rounded-lg bg-white hover:bg-neutral-100 py-2 px-4 text-neutral-800 border border-neutral-400"
+              >
                 View Applicants
               </button>
             ) : (
               <button
                 disabled={hasApplied}
                 onClick={onApply}
-                className="cursor-pointer rounded-lg bg-blue-600 py-2 px-4 text-white"
+                className="cursor-pointer rounded-lg bg-blue-600 py-2 px-4 text-white disabled:bg-neutral-400"
               >
-                {hasApplied ? "Applied" : "Apply"}
+                {applicationStatus === "SHORTLISTED"
+                  ? "Shortlisted"
+                  : applicationStatus === "REJECTED"
+                    ? "Rejected"
+                    : applicationStatus === "APPLIED"
+                      ? "Applied"
+                      : "Apply"}
               </button>
             )}
           </div>

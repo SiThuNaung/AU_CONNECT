@@ -16,7 +16,7 @@ type JobDraft = {
 
   // application status
   hasApplied?: boolean;
-  applicationStatus?: "APPLIED" | "SHORTLISTED" | "REJECTED";
+  applicationStatus?: "APPLIED" | "SHORTLISTED" | "REJECTED" | null;
 };
 
 export default JobDraft;

@@ -18,7 +18,11 @@ import { useResolvedMediaUrl } from "@/app/profile/utils/useResolvedMediaUrl";
 import JobPostDetailView from "./JobPostDetailView";
 import ApplyJobPostModal from "./ApplyJobModal";
 import { useApplyJob } from "../profile/utils/jobPostFetchFunctions";
-import { SINGLE_POST_API_PATH } from "@/lib/constants";
+import {
+  JOB_APPLICANTS_PAGE_PATH,
+  SINGLE_POST_API_PATH,
+} from "@/lib/constants";
+import { useRouter } from "next/navigation";
 
 export default function PostDetailsModal({
   currentUserId,
@@ -29,6 +33,7 @@ export default function PostDetailsModal({
   clickedIndex,
   onClose,
 }: PostDetailsModalTypes) {
+  const router = useRouter();
   const { data: post } = useQuery({
     queryKey: ["post", postInfo.id],
     queryFn: async () => {
@@ -39,6 +44,7 @@ export default function PostDetailsModal({
     initialData: postInfo,
   });
 
+  // TODO: remove in production
   useEffect(() => {
     console.log("fetched post:\n", post);
   }, [post]);
@@ -139,6 +145,7 @@ export default function PostDetailsModal({
                 jobData={postInfo.jobPost}
                 isOwner={postInfo.userId === currentUserId}
                 hasApplied={post.jobPost.hasApplied}
+                applicationStatus={post.jobPost.applicationStatus}
                 isSaved={post.isSaved}
                 onApply={() =>
                   handleJobApply(
@@ -146,6 +153,10 @@ export default function PostDetailsModal({
                     postInfo.jobPost?.applyUrl ?? "",
                   )
                 }
+                onSave={() => {}}
+                onViewApplicants={() => {
+                  router.push(JOB_APPLICANTS_PAGE_PATH(post.id));
+                }}
               />
             ) : postInfo.postType === "poll" ? (
               <MediaCarousel
@@ -280,7 +291,7 @@ export default function PostDetailsModal({
             console.log("Calling mutation now");
 
             await applyMutation.mutateAsync({
-                postId: post.id,
+              postId: post.id,
               jobPostId: postInfo.jobPost.id,
               ...data,
             });

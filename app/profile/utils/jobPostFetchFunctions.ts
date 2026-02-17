@@ -1,5 +1,9 @@
-import { JOB_APPLICATION_API_PATH } from "@/lib/constants";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  JOB_APPLICATION_API_PATH,
+  JOB_APPLICATION_DETAIL_API_PATH,
+  VIEW_JOB_APPLICATIONS_API_PATH,
+} from "@/lib/constants";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 
 export function useApplyJob() {
   const queryClient = useQueryClient();
@@ -85,6 +89,91 @@ export function useApplyJob() {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({
         queryKey: ["post", variables.postId],
+      });
+    },
+  });
+}
+
+export interface Applicant {
+  id: string;
+  status: string;
+  createdAt: string;
+  resumeBlobName: string;
+
+  applicant: {
+    id: string;
+    username: string;
+    email: string;
+    profilePic?: string;
+    title?: string;
+    location?: string;
+  };
+}
+
+export function useApplicants(postId: string) {
+  return useQuery({
+    queryKey: ["applicants", postId],
+
+    queryFn: async (): Promise<Applicant[]> => {
+      const res = await fetch(VIEW_JOB_APPLICATIONS_API_PATH(postId));
+
+      if (!res.ok) {
+        console.log(res);
+        throw new Error("Failed to fetch applicants");
+      }
+
+      const data = await res.json();
+
+      return data.applications;
+    },
+
+    enabled: !!postId,
+  });
+}
+
+export function useApplicationDetail(postId: string, applicationId: string) {
+  return useQuery({
+    queryKey: ["application", postId, applicationId],
+    queryFn: async () => {
+      const res = await fetch(
+        JOB_APPLICATION_DETAIL_API_PATH(postId, applicationId),
+      );
+      if (!res.ok) throw new Error("Failed to fetch application");
+      return res.json();
+    },
+  });
+}
+
+export function useUpdateApplicationStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      postId,
+      applicationId,
+      status,
+    }: {
+      postId: string;
+      applicationId: string;
+      status: "APPLIED" | "SHORTLISTED" | "REJECTED";
+    }) => {
+      const res = await fetch(
+        JOB_APPLICATION_DETAIL_API_PATH(postId, applicationId),
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        },
+      );
+      if (!res.ok) throw new Error("Failed to update status");
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["application", variables.postId, variables.applicationId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["applicants", variables.postId],
       });
     },
   });
