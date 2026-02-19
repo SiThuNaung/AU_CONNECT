@@ -66,24 +66,32 @@ export async function GET(
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    // Azure credential
-    const credential = new StorageSharedKeyCredential(
-      process.env.AZURE_STORAGE_ACCOUNT_NAME!,
-      process.env.AZURE_STORAGE_ACCOUNT_KEY!,
-    );
+    // Azure credential (Shared Key)
+    const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
+    const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
+    const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME;
 
-    const containerName = process.env.AZURE_STORAGE_CONTAINER_NAME!;
-    const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME!;
+    if (!accountName || !accountKey || !containerName) {
+      return NextResponse.json(
+        { error: "Azure storage env vars missing" },
+        { status: 500 },
+      );
+    }
 
-    function generateBlobUrl(blobName: string) {
+    const credential = new StorageSharedKeyCredential(accountName, accountKey);
+
+    /**
+     * ✅ For resume PDFs: we want inline viewing + correct content-type.
+     * ✅ IMPORTANT: no startsOn -> avoids immediate 403 due to clock skew.
+     */
+    function generateResumeUrl(blobName: string) {
       const sas = generateBlobSASQueryParameters(
         {
           containerName,
           blobName,
           permissions: BlobSASPermissions.parse("r"),
-          startsOn: new Date(),
-          expiresOn: new Date(Date.now() + 3600 * 1000),
-
+          // no startsOn (clock skew safe)
+          expiresOn: new Date(Date.now() + 60 * 60 * 1000),
           contentDisposition: "inline",
           contentType: "application/pdf",
         },
@@ -93,21 +101,41 @@ export async function GET(
       return `https://${accountName}.blob.core.windows.net/${containerName}/${blobName}?${sas}`;
     }
 
+    /**
+     * ✅ For generic blobs (images, etc.)
+     * ✅ IMPORTANT: no forced contentType (otherwise images can break)
+     * ✅ no startsOn (clock skew safe)
+     */
+    function generateBlobReadUrl(blobName: string) {
+      const sas = generateBlobSASQueryParameters(
+        {
+          containerName,
+          blobName,
+          permissions: BlobSASPermissions.parse("r"),
+          // no startsOn
+          expiresOn: new Date(Date.now() + 60 * 60 * 1000),
+        },
+        credential,
+      ).toString();
+
+      return `https://${accountName}.blob.core.windows.net/${containerName}/${blobName}?${sas}`;
+    }
+
     // Resume URL (always blob)
-    const resumeUrl = generateBlobUrl(application.resumeBlobName);
+    const resumeUrl = generateResumeUrl(application.resumeBlobName);
 
     // ProfilePic logic
-    let profilePicUrl = null;
+    let profilePicUrl: string | null = null;
 
     if (application.applicant.profilePic) {
       const pic = application.applicant.profilePic;
 
+      // External image → use as-is
       if (pic.startsWith("http://") || pic.startsWith("https://")) {
-        // External image → use as-is
         profilePicUrl = pic;
       } else {
-        // Blob image → generate SAS
-        profilePicUrl = generateBlobUrl(pic);
+        // Blob image → generate SAS (generic)
+        profilePicUrl = generateBlobReadUrl(pic);
       }
     }
 

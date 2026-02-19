@@ -15,6 +15,7 @@ import {
   DollarSign,
   Clock,
 } from "lucide-react";
+import { useEffect } from "react";
 
 const STATUS_STYLES = {
   APPLIED: "bg-blue-50 text-blue-700 border-blue-200",
