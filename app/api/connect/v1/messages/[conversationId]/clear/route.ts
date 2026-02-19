@@ -1,6 +1,11 @@
+// app/api/connect/v1/messages/[conversationId]/clear/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuthUserIdFromReq } from "@/lib/getAuthUserIdFromReq";
+
+function jsonError(message: string, status = 400) {
+  return NextResponse.json({ error: message }, { status });
+}
 
 export async function DELETE(
   req: NextRequest,
@@ -15,24 +20,19 @@ export async function DELETE(
       select: { userAId: true, userBId: true },
     });
 
-    if (!conv) {
-      return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
-    }
+    if (!conv) return jsonError("Conversation not found", 404);
+    if (conv.userAId !== authUserId && conv.userBId !== authUserId) return jsonError("Unauthorized", 403);
 
-    if (conv.userAId !== authUserId && conv.userBId !== authUserId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    await prisma.message.deleteMany({ where: { conversationId } });
 
-    // Delete all messages
-    await prisma.message.deleteMany({
-      where: { conversationId },
-    });
-
-    // Reset conversation metadata
     await prisma.conversation.update({
       where: { id: conversationId },
       data: {
         lastMessageAt: null,
+        lastMessageText: null,
+        lastMessageSenderId: null,
+        userAUnreadCount: 0,
+        userBUnreadCount: 0,
         userALastReadAt: null,
         userBLastReadAt: null,
       },

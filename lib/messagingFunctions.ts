@@ -22,22 +22,21 @@ export async function getMyInbox(req: NextRequest) {
   try {
     const authUserId = getAuthUserIdFromReq(req);
 
-    // 1️⃣ Get all conversations where I am userA or userB
+    // 1) Conversations (now includes unread + last preview)
     const conversations = await prisma.conversation.findMany({
-      where: {
-        OR: [
-          { userAId: authUserId },
-          { userBId: authUserId },
-        ],
-      },
+      where: { OR: [{ userAId: authUserId }, { userBId: authUserId }] },
       orderBy: { lastMessageAt: "desc" },
       select: {
         id: true,
         userAId: true,
         userBId: true,
+
         lastMessageAt: true,
-        userALastReadAt: true,
-        userBLastReadAt: true,
+        lastMessageText: true,
+        lastMessageSenderId: true,
+
+        userAUnreadCount: true,
+        userBUnreadCount: true,
       },
     });
 
@@ -45,12 +44,11 @@ export async function getMyInbox(req: NextRequest) {
       return NextResponse.json({ data: [] });
     }
 
-    // 2️⃣ Determine the "other user" ids
+    // 2) Batch fetch “other user”
     const otherUserIds = conversations.map((c) =>
       c.userAId === authUserId ? c.userBId : c.userAId
     );
 
-    // 3️⃣ Fetch those users
     const users = await prisma.user.findMany({
       where: { id: { in: otherUserIds } },
       select: { id: true, username: true, title: true, profilePic: true },
@@ -58,64 +56,31 @@ export async function getMyInbox(req: NextRequest) {
 
     const userMap = new Map(users.map((u) => [u.id, u]));
 
-    // 4️⃣ Get last message for each conversation
-    const lastMsgMap = new Map<
-      string,
-      { text: string | null; senderId: string; createdAt: Date }
-    >();
+    // 3) Build inbox rows (no message table queries)
+    const inbox = conversations
+      .map((c) => {
+        const otherUserId = c.userAId === authUserId ? c.userBId : c.userAId;
+        const user = userMap.get(otherUserId);
+        if (!user) return null;
 
-    for (const c of conversations) {
-      const last = await prisma.message.findFirst({
-        where: { conversationId: c.id },
-        orderBy: { createdAt: "desc" },
-        select: { text: true, senderId: true, createdAt: true },
-      });
+        const unreadCount =
+          c.userAId === authUserId ? c.userAUnreadCount : c.userBUnreadCount;
 
-      if (last) {
-        lastMsgMap.set(c.id, last);
-      }
-    }
+        const lastPrefix =
+          c.lastMessageSenderId && c.lastMessageSenderId === authUserId ? "You: " : "";
 
-    // 5️⃣ Compute unread count
-    const unreadCountMap = new Map<string, number>();
+        const lastMessageText =
+          c.lastMessageText ? `${lastPrefix}${c.lastMessageText}` : null;
 
-    for (const c of conversations) {
-      const isUserA = c.userAId === authUserId;
-      const myLastReadAt = isUserA ? c.userALastReadAt : c.userBLastReadAt;
-
-      const count = await prisma.message.count({
-        where: {
+        return {
+          user,
           conversationId: c.id,
-          receiverId: authUserId,
-          ...(myLastReadAt ? { createdAt: { gt: myLastReadAt } } : {}),
-        },
-      });
-
-      unreadCountMap.set(c.id, count);
-    }
-
-    // 6️⃣ Build inbox
-    const inbox = conversations.map((c) => {
-      const otherUserId =
-        c.userAId === authUserId ? c.userBId : c.userAId;
-
-      const user = userMap.get(otherUserId);
-      if (!user) return null;
-
-      const last = lastMsgMap.get(c.id);
-      const lastPrefix =
-        last && last.senderId === authUserId ? "You: " : "";
-
-      return {
-        user,
-        conversationId: c.id,
-        lastMessageAt: c.lastMessageAt,
-        lastMessageText: last?.text
-          ? `${lastPrefix}${last.text}`
-          : null,
-        unreadCount: unreadCountMap.get(c.id) ?? 0,
-      };
-    }).filter(Boolean);
+          lastMessageAt: c.lastMessageAt,
+          lastMessageText,
+          unreadCount: unreadCount ?? 0,
+        };
+      })
+      .filter(Boolean);
 
     return NextResponse.json({ data: inbox });
   } catch (e: unknown) {
@@ -123,7 +88,6 @@ export async function getMyInbox(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
-
 
 /* =========================
    GET OR CREATE CONVERSATION
@@ -163,9 +127,16 @@ export async function getOrCreateConversation(
         data: {
           userAId: pair.userAId,
           userBId: pair.userBId,
+
           lastMessageAt: null,
+          lastMessageText: null,
+          lastMessageSenderId: null,
+
           userALastReadAt: null,
           userBLastReadAt: null,
+
+          userAUnreadCount: 0,
+          userBUnreadCount: 0,
         },
         select: { id: true },
       }));
@@ -199,13 +170,13 @@ export async function markConversationRead(req: NextRequest, conversationId: str
       return jsonError("Unauthorized", 403);
     }
 
-    const readField = getMyReadField(conv, authUserId);
+    const isUserA = conv.userAId === authUserId;
 
     await prisma.conversation.update({
       where: { id: conversationId },
-      data: {
-        [readField]: new Date(),
-      },
+      data: isUserA
+        ? { userALastReadAt: new Date(), userAUnreadCount: 0 }
+        : { userBLastReadAt: new Date(), userBUnreadCount: 0 },
     });
 
     return NextResponse.json({ ok: true });
@@ -214,6 +185,7 @@ export async function markConversationRead(req: NextRequest, conversationId: str
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
+
 
 /* =========================
    GET MESSAGES
@@ -338,24 +310,35 @@ export async function sendMessage(req: NextRequest, conversationId: string) {
       return jsonError("Unauthorized", 403);
     }
 
-    const receiverId =
-      conv.userAId === authUserId ? conv.userBId : conv.userAId;
+    const receiverId = conv.userAId === authUserId ? conv.userBId : conv.userAId;
 
     const body = await req.json().catch(() => ({}));
     const text = typeof body.text === "string" ? body.text.trim() : "";
     if (!text) return jsonError("Message text is required", 400);
 
-    const msg = await prisma.message.create({
-      data: { conversationId, senderId: authUserId, receiverId, text },
-      select: { id: true, senderId: true, receiverId: true, text: true, createdAt: true },
+    // decide which unread field to increment (receiver side)
+    const incField = receiverId === conv.userAId ? "userAUnreadCount" : "userBUnreadCount";
+
+    const result = await prisma.$transaction(async (tx) => {
+      const msg = await tx.message.create({
+        data: { conversationId, senderId: authUserId, receiverId, text },
+        select: { id: true, senderId: true, receiverId: true, text: true, createdAt: true },
+      });
+
+      await tx.conversation.update({
+        where: { id: conversationId },
+        data: {
+          lastMessageAt: msg.createdAt,
+          lastMessageText: msg.text ?? null,
+          lastMessageSenderId: authUserId,
+          [incField]: { increment: 1 },
+        },
+      });
+
+      return msg;
     });
 
-    await prisma.conversation.update({
-      where: { id: conversationId },
-      data: { lastMessageAt: msg.createdAt },
-    });
-
-    return NextResponse.json({ data: msg });
+    return NextResponse.json({ data: result });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Server error";
     return NextResponse.json({ error: msg }, { status: 500 });

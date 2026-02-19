@@ -31,6 +31,7 @@ import { useFeedStore } from "@/lib/stores/feedStore";
 import { buildSlug } from "@/app/(main)/profile/utils/buildSlug";
 import PopupModal from "./PopupModal";
 import { fetchUnreadCount } from "@/lib/notifications";
+import { fetchUnreadMessagesCount } from "@/lib/headerMessaging";
 
 const Skeleton = ({ className = "" }) => (
   <div className={`animate-pulse bg-gray-200 rounded ${className}`} />
@@ -78,6 +79,13 @@ export default function Header() {
     queryKey: ["user"],
     queryFn: fetchUser,
   });
+
+  const { data: msgUnreadData } = useQuery({
+    queryKey: ["messages-unread-count"],
+    queryFn: fetchUnreadMessagesCount,
+    refetchInterval: 4000,
+  });
+  const msgUnreadCount = msgUnreadData?.count ?? 0;
 
   const { data: searchResults = [], isFetching } = useQuery({
     queryKey: ["search-users", query],
@@ -202,8 +210,17 @@ export default function Header() {
               { href: CONNECT_PAGE_PATH, icon: <UserPlus />, label: "Connect" },
               {
                 href: MESSAGES_PAGE_PATH,
-                icon: <MessageCircleMore />,
                 label: "Messaging",
+                icon: (
+                  <div className="relative">
+                    <MessageCircleMore />
+                    {msgUnreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                        {msgUnreadCount > 9 ? "9+" : msgUnreadCount}
+                      </span>
+                    )}
+                  </div>
+                ),
               },
               {
                 href: NOTIFICATION_PAGE_PATH,
@@ -228,11 +245,10 @@ export default function Header() {
                     refetchUnread();
                   }
                 }}
-                className={`flex flex-col items-center gap-1 hover:text-red-500 rounded-lg ${
-                  currentPage === item.href
+                className={`flex flex-col items-center gap-1 hover:text-red-500 rounded-lg ${currentPage === item.href
                     ? "text-red-500"
                     : "text-gray-600"
-                }`}
+                  }`}
                 title={item.label}
               >
                 {item.icon}

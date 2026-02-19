@@ -248,26 +248,29 @@ model Notification {
 model Conversation {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  // sorted order: userAId < userBId
   userAId String @db.ObjectId
   userBId String @db.ObjectId
 
-  lastMessageAt DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  lastMessageAt       DateTime?
+  lastMessageText     String?
+  lastMessageSenderId String? @db.ObjectId
 
   userALastReadAt DateTime?
   userBLastReadAt DateTime?
 
+  userAUnreadCount Int @default(0)
+  userBUnreadCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   messages Message[]
 
   @@unique([userAId, userBId])
-  @@index([userAId])
-  @@index([userBId])
-  @@index([lastMessageAt])
   @@index([userAId, lastMessageAt])
   @@index([userBId, lastMessageAt])
 }
+
 
 model Message {
   id String @id @default(auto()) @map("_id") @db.ObjectId
