@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import ConversationsPane from "./components/ConversationsPane";
 import ChatPane from "./components/ChatPane";
 import { useMessaging } from "./util/useMessaging";
 
-export default function MessagePages() {
+function MessagesPageContent() {
   const {
     inbox,
     selectedUserId,
@@ -76,5 +77,13 @@ export default function MessagePages() {
         />
       </div>
     </div>
+  );
+}
+
+export default function MessagePages() {
+  return (
+    <Suspense fallback={null}>
+      <MessagesPageContent />
+    </Suspense>
   );
 }

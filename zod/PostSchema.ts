@@ -3,14 +3,28 @@ import { z } from "zod";
 import { MediaSchema } from "./MediaSchema";
 import JobSchema from "./JobSchema";
 
+const optionalString = z.preprocess((value) => {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : undefined;
+}, z.string().optional());
+
+const optionalUrl = z.preprocess((value) => {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : undefined;
+}, z.string().url().optional());
+
 const LinkEmbedSchema = z.object({
-  url: z.string().url("Must be a valid URL"),
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  image: z.string().url().optional(),
-  siteName: z.string().optional(),
-  favicon: z.string().url().optional(),
-  jobDetails: z.string().optional(),
+  url: z.string().trim().url("Must be a valid URL"),
+  title: z.string().trim().min(1, "Title is required"),
+  description: optionalString,
+  image: optionalUrl,
+  siteName: optionalString,
+  favicon: optionalUrl,
+  jobDetails: optionalString,
   jobRequirements: z.array(z.string()).optional(),
 });
 

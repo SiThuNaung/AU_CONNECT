@@ -1,5 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
-import { JSDOM } from "jsdom";
+
+export const runtime = "nodejs";
+
+function extractMetaContent(html: string, key: string): string | null {
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  // Support both property="..." and name="..." with flexible attribute order.
+  const patterns = [
+    new RegExp(
+      `<meta[^>]*\\bproperty\\s*=\\s*["']${escaped}["'][^>]*\\bcontent\\s*=\\s*["']([^"']+)["'][^>]*>`,
+      "i",
+    ),
+    new RegExp(
+      `<meta[^>]*\\bcontent\\s*=\\s*["']([^"']+)["'][^>]*\\bproperty\\s*=\\s*["']${escaped}["'][^>]*>`,
+      "i",
+    ),
+    new RegExp(
+      `<meta[^>]*\\bname\\s*=\\s*["']${escaped}["'][^>]*\\bcontent\\s*=\\s*["']([^"']+)["'][^>]*>`,
+      "i",
+    ),
+    new RegExp(
+      `<meta[^>]*\\bcontent\\s*=\\s*["']([^"']+)["'][^>]*\\bname\\s*=\\s*["']${escaped}["'][^>]*>`,
+      "i",
+    ),
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1]) return match[1].trim();
+  }
+
+  return null;
+}
+
+function extractTitle(html: string): string | null {
+  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  if (!match?.[1]) return null;
+  return match[1].replace(/\s+/g, " ").trim() || null;
+}
+
+function extractIconHref(html: string): string | null {
+  const linkMatch = html.match(
+    /<link[^>]*\brel\s*=\s*["'][^"']*icon[^"']*["'][^>]*>/i,
+  );
+  if (!linkMatch?.[0]) return null;
+
+  const hrefMatch = linkMatch[0].match(/\bhref\s*=\s*["']([^"']+)["']/i);
+  return hrefMatch?.[1]?.trim() || null;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -70,37 +118,24 @@ export async function POST(req: NextRequest) {
     }
 
     const html = await response.text();
-    const dom = new JSDOM(html);
-    const document = dom.window.document;
-
-    // Helper function to get meta content
-    const getMetaContent = (property: string): string | null => {
-      // Try Open Graph tags first
-      let meta = document.querySelector(`meta[property="${property}"]`);
-      if (meta) return meta.getAttribute("content");
-
-      // Try name attribute (for Twitter cards, etc.)
-      meta = document.querySelector(`meta[name="${property}"]`);
-      if (meta) return meta.getAttribute("content");
-
-      return null;
-    };
 
     // Extract metadata
     const title =
-      getMetaContent("og:title") ||
-      getMetaContent("twitter:title") ||
-      document.querySelector("title")?.textContent?.trim() ||
+      extractMetaContent(html, "og:title") ||
+      extractMetaContent(html, "twitter:title") ||
+      extractTitle(html) ||
       null;
 
     const description =
-      getMetaContent("og:description") ||
-      getMetaContent("twitter:description") ||
-      getMetaContent("description") ||
+      extractMetaContent(html, "og:description") ||
+      extractMetaContent(html, "twitter:description") ||
+      extractMetaContent(html, "description") ||
       null;
 
     let image =
-      getMetaContent("og:image") || getMetaContent("twitter:image") || null;
+      extractMetaContent(html, "og:image") ||
+      extractMetaContent(html, "twitter:image") ||
+      null;
 
     // Make image URL absolute if it's relative
     if (image && !image.startsWith("http")) {
@@ -112,21 +147,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const siteName = getMetaContent("og:site_name") || parsedUrl.hostname;
+    const siteName = extractMetaContent(html, "og:site_name") || parsedUrl.hostname;
 
     // Get favicon
     let favicon: string | null = null;
-    const iconLink = document.querySelector('link[rel*="icon"]');
-    if (iconLink) {
-      const href = iconLink.getAttribute("href");
-      if (href) {
-        try {
-          favicon = href.startsWith("http")
-            ? href
-            : new URL(href, parsedUrl.origin).href;
-        } catch (e) {
-          console.warn("Failed to resolve favicon URL:", href);
-        }
+    const iconHref = extractIconHref(html);
+    if (iconHref) {
+      try {
+        favicon = iconHref.startsWith("http")
+          ? iconHref
+          : new URL(iconHref, parsedUrl.origin).href;
+      } catch (e) {
+        console.warn("Failed to resolve favicon URL:", iconHref);
       }
     }
 
