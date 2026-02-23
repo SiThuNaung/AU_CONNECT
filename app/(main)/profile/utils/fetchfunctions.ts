@@ -327,16 +327,28 @@ export function useToggleLike() {
     unknown,
     Error,
     { postId: string; isLiked: boolean },
-    { previousPosts?: PostsInfiniteData }
+    {
+      previousPosts?: PostsInfiniteData;
+      previousProfilePosts?: [unknown, unknown][];
+      previousProfileJobPosts?: [unknown, unknown][];
+    }
   >({
     mutationFn: ({ postId }) => callPostLikeUpdate({ postId }),
 
     onMutate: async ({ postId, isLiked }) => {
       await queryClient.cancelQueries({ queryKey: ["posts"] });
+      await queryClient.cancelQueries({ queryKey: ["profilePosts"] });
+      await queryClient.cancelQueries({ queryKey: ["profileJobPosts"] });
 
       const previousPosts = queryClient.getQueryData<PostsInfiniteData>([
         "posts",
       ]);
+      const previousProfilePosts = queryClient.getQueriesData({
+        queryKey: ["profilePosts"],
+      });
+      const previousProfileJobPosts = queryClient.getQueriesData({
+        queryKey: ["profileJobPosts"],
+      });
 
       queryClient.setQueryData<PostsInfiniteData>(["posts"], (old) => {
         if (!old) return old;
@@ -349,8 +361,7 @@ export function useToggleLike() {
               post.id === postId
                 ? {
                   ...post,
-                  likeCount:
-                    post.likeCount && post.likeCount + (isLiked ? -1 : 1),
+                  likeCount: (post.likeCount ?? 0) + (isLiked ? -1 : 1),
                   isLiked: !isLiked, // 🔥 important
                 }
                 : post,
@@ -359,12 +370,66 @@ export function useToggleLike() {
         };
       });
 
-      return { previousPosts };
+      queryClient.setQueriesData(
+        { queryKey: ["profilePosts"], exact: false },
+        (oldData: any) => {
+          if (!oldData?.pages) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              posts: page.posts.map((post: any) =>
+                post.id === postId
+                  ? {
+                      ...post,
+                      likeCount: (post.likeCount ?? 0) + (isLiked ? -1 : 1),
+                      isLiked: !isLiked,
+                    }
+                  : post,
+              ),
+            })),
+          };
+        },
+      );
+
+      queryClient.setQueriesData(
+        { queryKey: ["profileJobPosts"], exact: false },
+        (oldData: any) => {
+          if (!oldData?.pages) return oldData;
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              posts: page.posts.map((post: any) =>
+                post.id === postId
+                  ? {
+                      ...post,
+                      likeCount: (post.likeCount ?? 0) + (isLiked ? -1 : 1),
+                      isLiked: !isLiked,
+                    }
+                  : post,
+              ),
+            })),
+          };
+        },
+      );
+
+      return { previousPosts, previousProfilePosts, previousProfileJobPosts };
     },
 
     onError: (_err, _vars, context) => {
       if (context?.previousPosts) {
         queryClient.setQueryData(["posts"], context.previousPosts);
+      }
+      if (context?.previousProfilePosts) {
+        context.previousProfilePosts.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
+      if (context?.previousProfileJobPosts) {
+        context.previousProfileJobPosts.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
       }
     },
 
