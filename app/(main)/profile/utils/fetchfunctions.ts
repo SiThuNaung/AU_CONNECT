@@ -529,14 +529,23 @@ export function useToggleSave() {
     onMutate: async (postId: string) => {
       // Cancel outgoing queries
       await queryClient.cancelQueries({ queryKey: ["posts"] });
+      await queryClient.cancelQueries({ queryKey: ["profilePosts"] });
+      await queryClient.cancelQueries({ queryKey: ["profileJobPosts"] });
       await queryClient.cancelQueries({ queryKey: ["post", postId] });
+      await queryClient.cancelQueries({ queryKey: ["posts", postId] });
 
       // Snapshot previous values
       const previousPosts = queryClient.getQueryData(["posts"]);
+      const previousProfilePosts = queryClient.getQueriesData({
+        queryKey: ["profilePosts"],
+      });
+      const previousProfileJobPosts = queryClient.getQueriesData({
+        queryKey: ["profileJobPosts"],
+      });
       const previousPost = queryClient.getQueryData(["post", postId]);
+      const previousPostAlt = queryClient.getQueryData(["posts", postId]);
 
-      // Optimistically update feed cache
-      queryClient.setQueryData(["posts"], (oldData: any) => {
+      const applyOptimisticSave = (oldData: any) => {
         if (!oldData?.pages) return oldData;
         return {
           ...oldData,
@@ -545,17 +554,28 @@ export function useToggleSave() {
             posts: page.posts.map((post: any) =>
               post.id === postId
                 ? {
-                  ...post,
-                  isSaved: !post.isSaved,
-                  savedCount: post.isSaved
-                    ? post.savedCount - 1
-                    : post.savedCount + 1,
-                }
+                    ...post,
+                    isSaved: !post.isSaved,
+                    savedCount: post.isSaved
+                      ? post.savedCount - 1
+                      : post.savedCount + 1,
+                  }
                 : post,
             ),
           })),
         };
-      });
+      };
+
+      // Optimistically update feed cache
+      queryClient.setQueryData(["posts"], applyOptimisticSave);
+      queryClient.setQueriesData(
+        { queryKey: ["profilePosts"], exact: false },
+        applyOptimisticSave,
+      );
+      queryClient.setQueriesData(
+        { queryKey: ["profileJobPosts"], exact: false },
+        applyOptimisticSave,
+      );
 
       // Optimistically update single post cache
       queryClient.setQueryData(["post", postId], (oldPost: any) => {
@@ -568,8 +588,24 @@ export function useToggleSave() {
             : oldPost.savedCount + 1,
         };
       });
+      queryClient.setQueryData(["posts", postId], (oldPost: any) => {
+        if (!oldPost) return oldPost;
+        return {
+          ...oldPost,
+          isSaved: !oldPost.isSaved,
+          savedCount: oldPost.isSaved
+            ? oldPost.savedCount - 1
+            : oldPost.savedCount + 1,
+        };
+      });
 
-      return { previousPosts, previousPost };
+      return {
+        previousPosts,
+        previousProfilePosts,
+        previousProfileJobPosts,
+        previousPost,
+        previousPostAlt,
+      };
     },
 
     onError: (_err, postId, context) => {
@@ -577,8 +613,21 @@ export function useToggleSave() {
       if (context?.previousPosts) {
         queryClient.setQueryData(["posts"], context.previousPosts);
       }
+      if (context?.previousProfilePosts) {
+        context.previousProfilePosts.forEach(([key, data]: [any, any]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
+      if (context?.previousProfileJobPosts) {
+        context.previousProfileJobPosts.forEach(([key, data]: [any, any]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
       if (context?.previousPost) {
         queryClient.setQueryData(["post", postId], context.previousPost);
+      }
+      if (context?.previousPostAlt) {
+        queryClient.setQueryData(["posts", postId], context.previousPostAlt);
       }
     },
 

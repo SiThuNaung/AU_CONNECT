@@ -24,6 +24,7 @@ export default function ExperienceManagerModal({
 }) {
   const [editing, setEditing] = useState<Experience | null>(null);
   const [openForm, setOpenForm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   if (!open) return null;
 
@@ -64,7 +65,9 @@ export default function ExperienceManagerModal({
             {experiences.map((exp) => (
               <div
                 key={exp.id}
-                className="border border-gray-200 rounded-lg p-4 flex justify-between hover:bg-gray-50"
+                className={`border border-gray-200 rounded-lg p-4 flex justify-between hover:bg-gray-50 ${
+                  deletingId === exp.id ? "opacity-60" : ""
+                }`}
               >
                 <div>
                   <p className="font-semibold text-gray-900 truncate">
@@ -86,30 +89,41 @@ export default function ExperienceManagerModal({
                 <div className="flex items-start gap-2">
                   <button
                     onClick={() => {
+                      if (deletingId === exp.id) return;
                       setEditing(exp);
                       setOpenForm(true);
                     }}
-                    className="p-2 rounded-full hover:bg-gray-100 cursor-pointer"
+                    disabled={deletingId === exp.id}
+                    className="p-2 rounded-full hover:bg-gray-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Pencil size={16} className="text-gray-600" />
                   </button>
 
                   <button
                     onClick={async () => {
-                      await fetch(
-                        DELETE_EXPERIENCE_API_PATH + `/${exp.id}`,
-                        {
-                          method: "DELETE",
-                          credentials: "include",
-                        }
-                      );
+                      if (deletingId === exp.id) return;
+                      setDeletingId(exp.id);
+                      try {
+                        const res = await fetch(
+                          DELETE_EXPERIENCE_API_PATH + `/${exp.id}`,
+                          {
+                            method: "DELETE",
+                            credentials: "include",
+                          }
+                        );
 
-                      // updates ProfileView immediately
-                      setExperiences((prev) =>
-                        prev.filter((e) => e.id !== exp.id)
-                      );
+                        if (!res.ok) throw new Error("Delete failed");
+
+                        // updates ProfileView immediately
+                        setExperiences((prev) =>
+                          prev.filter((e) => e.id !== exp.id)
+                        );
+                      } finally {
+                        setDeletingId(null);
+                      }
                     }}
-                    className="p-2 rounded-full hover:bg-red-50 cursor-pointer"
+                    disabled={deletingId === exp.id}
+                    className="p-2 rounded-full hover:bg-red-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Trash2 size={16} className="text-red-600" />
                   </button>

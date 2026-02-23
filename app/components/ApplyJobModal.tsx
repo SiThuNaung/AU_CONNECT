@@ -152,7 +152,7 @@ export default function ApplyJobPostModal({
           {/* Expected Salary */}
           <div>
             <label className="block text-sm font-medium text-black mb-1">
-              Expected Salary
+              Expected Salary ( $ )
             </label>
 
             <input

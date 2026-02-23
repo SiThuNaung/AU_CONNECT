@@ -121,6 +121,8 @@ export async function getProfilePosts(req: NextRequest, profileUserId: string) {
             location: true,
             locationType: true,
             employmentType: true,
+            positionsAvailable: true,
+            positionsFilled: true,
             salaryMin: true,
             salaryMax: true,
             salaryCurrency: true,
@@ -158,6 +160,8 @@ export async function getProfilePosts(req: NextRequest, profileUserId: string) {
           ? {
             jobPost: {
               ...post.jobPost,
+              remainingPositions:
+                post.jobPost.positionsAvailable - post.jobPost.positionsFilled,
               hasApplied,
               applicationStatus,
               applications: undefined, // prevent leaking extra array to client

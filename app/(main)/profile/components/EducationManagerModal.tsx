@@ -24,6 +24,7 @@ export default function EducationManagerModal({
 }) {
   const [editing, setEditing] = useState<Education | null>(null);
   const [openForm, setOpenForm] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   if (!open) return null;
 
@@ -61,7 +62,9 @@ export default function EducationManagerModal({
             {education.map((edu) => (
               <div
                 key={edu.id}
-                className="border border-gray-200 rounded-lg p-4 flex justify-between hover:bg-gray-50"
+                className={`border border-gray-200 rounded-lg p-4 flex justify-between hover:bg-gray-50 ${
+                  deletingId === edu.id ? "opacity-60" : ""
+                }`}
               >
                 <div>
                   <p className="font-semibold text-gray-900 truncate">
@@ -81,29 +84,40 @@ export default function EducationManagerModal({
                 <div className="flex items-start gap-2">
                   <button
                     onClick={() => {
+                      if (deletingId === edu.id) return;
                       setEditing(edu);
                       setOpenForm(true);
                     }}
-                    className="p-2 rounded-full hover:bg-gray-100 cursor-pointer"
+                    disabled={deletingId === edu.id}
+                    className="p-2 rounded-full hover:bg-gray-100 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Pencil size={16} className="text-gray-600" />
                   </button>
 
                   <button
                     onClick={async () => {
-                      await fetch(
-                        DELETE_EDUCATION_API_PATH + `/${edu.id}`,
-                        {
-                          method: "DELETE",
-                          credentials: "include",
-                        }
-                      );
+                      if (deletingId === edu.id) return;
+                      setDeletingId(edu.id);
+                      try {
+                        const res = await fetch(
+                          DELETE_EDUCATION_API_PATH + `/${edu.id}`,
+                          {
+                            method: "DELETE",
+                            credentials: "include",
+                          }
+                        );
 
-                      setEducation((prev) =>
-                        prev.filter((e) => e.id !== edu.id)
-                      );
+                        if (!res.ok) throw new Error("Delete failed");
+
+                        setEducation((prev) =>
+                          prev.filter((e) => e.id !== edu.id)
+                        );
+                      } finally {
+                        setDeletingId(null);
+                      }
                     }}
-                    className="p-2 rounded-full hover:bg-red-50 cursor-pointer"
+                    disabled={deletingId === edu.id}
+                    className="p-2 rounded-full hover:bg-red-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Trash2 size={16} className="text-red-600" />
                   </button>

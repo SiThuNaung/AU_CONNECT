@@ -27,6 +27,8 @@ const JOBPOST_SELECT = {
   location: true,
   locationType: true,
   employmentType: true,
+  positionsAvailable: true,
+  positionsFilled: true,
   salaryMin: true,
   salaryMax: true,
   salaryCurrency: true,
@@ -133,6 +135,8 @@ export async function getProfileJobPosts(req: NextRequest, profileUserId: string
           ? {
               jobPost: {
                 ...post.jobPost,
+                remainingPositions:
+                  post.jobPost.positionsAvailable - post.jobPost.positionsFilled,
                 hasApplied,
                 applicationStatus,
                 applications: undefined,
