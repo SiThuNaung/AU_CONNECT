@@ -583,7 +583,7 @@ export function useToggleSave() {
 
   return useMutation({
     mutationFn: async (postId: string) => {
-      console.log("Saving post:", postId);
+      // console.log("Saving post:", postId);
       const res = await fetch(SAVE_POST_API_PATH(postId), {
         method: "POST",
       });

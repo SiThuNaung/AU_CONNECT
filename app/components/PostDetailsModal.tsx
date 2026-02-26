@@ -442,15 +442,15 @@ export default function PostDetailsModal({
           jobTitle={postInfo.jobPost?.jobTitle || ""}
           companyName={postInfo.jobPost?.companyName}
           onSubmit={async (data) => {
-            console.log("Parent onSubmit called");
-            console.log("jobPostId:", postInfo.jobPost?.id);
+            // console.log("Parent onSubmit called");
+            // console.log("jobPostId:", postInfo.jobPost?.id);
 
             if (!postInfo.jobPost?.id) {
-              console.log("No jobPostId, returning early");
+              // console.log("No jobPostId, returning early");
               return;
             }
 
-            console.log("Calling mutation now");
+            // console.log("Calling mutation now");
 
             await applyMutation.mutateAsync({
               postId: post.id,
@@ -458,7 +458,7 @@ export default function PostDetailsModal({
               ...data,
             });
 
-            console.log("Mutation finished");
+            // console.log("Mutation finished");
           }}
         />
       </div>

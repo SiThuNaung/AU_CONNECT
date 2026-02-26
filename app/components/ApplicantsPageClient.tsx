@@ -35,7 +35,7 @@ export default function ApplicantsPageClient({ postId }: { postId: string }) {
     }) || [];
 
   const handleCloseJob = () => {
-    console.log("Close job clicked");
+    // console.log("Close job clicked");
     closeJobMutation.mutate(postId);
   };
 

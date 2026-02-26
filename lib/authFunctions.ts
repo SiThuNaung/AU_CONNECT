@@ -481,7 +481,7 @@ async function importProviderAvatarToAzure(
     const res = await fetch(imageUrl);
 
     if (!res.ok) {
-      console.log("Failed to fetch provider avatar:", res.status);
+      // console.log("Failed to fetch provider avatar:", res.status);
       return null;
     }
 
@@ -489,7 +489,7 @@ async function importProviderAvatarToAzure(
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
 
     if (!allowedTypes.includes(contentType)) {
-      console.log("Provider avatar type not allowed:", contentType);
+      // console.log("Provider avatar type not allowed:", contentType);
       return null;
     }
 
@@ -498,7 +498,7 @@ async function importProviderAvatarToAzure(
     // max 5MB
     const maxBytes = 5 * 1024 * 1024;
     if (arrayBuffer.byteLength > maxBytes) {
-      console.log("Provider avatar too large:", arrayBuffer.byteLength);
+      // console.log("Provider avatar too large:", arrayBuffer.byteLength);
       return null;
     }
 
@@ -550,7 +550,7 @@ async function importMicrosoftAvatarToAzure(
 
     // 404 means user has no profile photo in Microsoft
     if (res.status === 404) {
-      console.log("Microsoft user has no profile photo");
+      // console.log("Microsoft user has no profile photo");
       return null;
     }
 

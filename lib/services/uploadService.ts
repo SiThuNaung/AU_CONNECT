@@ -8,7 +8,7 @@ let invalidatePostsFn: (() => void) | null = null;
 
 export function setInvalidatePosts(fn: () => void) {
   invalidatePostsFn = fn;
-  console.log("✅ invalidatePostsFn set");
+  // console.log("✅ invalidatePostsFn set");
 }
 
 function invalidatePostsSafe() {
@@ -23,7 +23,7 @@ let invalidateProfilePostsFn: (() => void) | null = null;
 
 export function setInvalidateProfilePosts(fn: () => void) {
   invalidateProfilePostsFn = fn;
-  console.log("✅ invalidateProfilePostsFn set");
+  // console.log("✅ invalidateProfilePostsFn set");
 }
 
 function invalidateProfilePostsSafe() {
@@ -41,7 +41,7 @@ export async function processUpload(jobId: string) {
   const job = store.jobs.find((j) => j.id === jobId);
 
   if (!job) {
-    console.log("❌ Job not found:", jobId);
+    // console.log("❌ Job not found:", jobId);
     return;
   }
 
@@ -49,7 +49,7 @@ export async function processUpload(jobId: string) {
     throw new Error("Job post missing job payload");
   }
 
-  console.log("🚀 Starting upload for job:", jobId);
+  // console.log("🚀 Starting upload for job:", jobId);
 
   try {
     store.updateJobStatus(jobId, "uploading");
@@ -80,7 +80,7 @@ export async function processUpload(jobId: string) {
       }),
     );
 
-    console.log("✅ Media uploaded:", uploadedMedia);
+    // console.log("✅ Media uploaded:", uploadedMedia);
 
     store.updateJobProgress(jobId, 90);
 
@@ -99,7 +99,7 @@ export async function processUpload(jobId: string) {
       job.job,
     );
 
-    console.log("✅ Post created:", createdPost);
+    // console.log("✅ Post created:", createdPost);
 
     store.updateJobProgress(jobId, 100);
     store.updateJobStatus(jobId, "complete");

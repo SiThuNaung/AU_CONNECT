@@ -89,16 +89,16 @@ async function sendNotificationEmail(
         subject,
         html,
       });
-      console.log(`✅ [DEV] Email sent via Gmail SMTP:`, result.messageId);
+      // console.log(`✅ [DEV] Email sent via Gmail SMTP:`, result.messageId);
       return result;
     }
 
     // Fallback: log to console so you can see what would be sent
-    console.log("─────────────────────────────────────────");
-    console.log("📧 [DEV] No Gmail credentials — email preview:");
-    console.log(`   To:      ${recipient.email}`);
-    console.log(`   Subject: ${subject}`);
-    console.log("─────────────────────────────────────────");
+    // console.log("─────────────────────────────────────────");
+    // console.log("📧 [DEV] No Gmail credentials — email preview:");
+    // console.log(`   To:      ${recipient.email}`);
+    // console.log(`   Subject: ${subject}`);
+    // console.log("─────────────────────────────────────────");
     return;
   }
 
@@ -115,7 +115,7 @@ async function sendNotificationEmail(
     html,
   });
 
-  console.log(`✅ [PROD] Email sent via Resend:`, result);
+  // console.log(`✅ [PROD] Email sent via Resend:`, result);
   return result;
 }
 

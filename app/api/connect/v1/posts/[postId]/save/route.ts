@@ -8,7 +8,7 @@ export async function POST(
   context: { params: Promise<{ postId: string }> },
 ) {
   try {
-    console.log("Server API is being called");
+    // console.log("Server API is being called");
     // user validation
     const [userEmail, userId] = getHeaderUserInfo(req);
 

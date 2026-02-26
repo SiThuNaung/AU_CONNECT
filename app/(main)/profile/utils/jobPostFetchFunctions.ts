@@ -121,7 +121,7 @@ export function useApplicants(postId: string) {
       const res = await fetch(VIEW_JOB_APPLICATIONS_API_PATH(postId));
 
       if (!res.ok) {
-        console.log(res);
+        // console.log(res);
         throw new Error("Failed to fetch applicants");
       }
 

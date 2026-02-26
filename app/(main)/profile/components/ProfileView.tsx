@@ -163,10 +163,10 @@ export default function ProfileView({
   const [connectionsList, setConnectionsList] = useState<ConnectionUser[]>([]);
   const [connectionsLoading, setConnectionsLoading] = useState(false);
 
-  useEffect(() => {
-    console.log(user);
-    console.log("Session user ID:", sessionUserId);
-  }, [user, sessionUserId]);
+  // useEffect(() => {
+  //   console.log(user);
+  //   console.log("Session user ID:", sessionUserId);
+  // }, [user, sessionUserId]);
 
 
   // ✅ OLD: profile posts (unchanged)

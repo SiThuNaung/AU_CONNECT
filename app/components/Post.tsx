@@ -166,7 +166,7 @@ export default function Post({
             }}
             onCommentClicked={() => openPostModal(post.id, 0)}
             onShareClicked={() => {
-              console.log("Share clicked", shareModalOpen);
+              // console.log("Share clicked", shareModalOpen);
               setShareModalOpen(true);
             }}
           />
@@ -294,7 +294,7 @@ export default function Post({
         companyName={post.jobPost?.companyName}
         onSubmit={async (data) => {
           if (!post.jobPost?.id) {
-            console.log("No jobPostId, returning early");
+            // console.log("No jobPostId, returning early");
             return;
           }
           await applyMutation.mutateAsync({

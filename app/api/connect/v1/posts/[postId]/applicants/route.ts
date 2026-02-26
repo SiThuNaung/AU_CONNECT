@@ -22,7 +22,7 @@ export async function GET(
     }
 
     const { postId } = await context.params;
-    console.log("PHASE 1");
+    // console.log("PHASE 1");
 
     // verify ownership
     const jobPost = await prisma.jobPost.findUnique({
@@ -50,7 +50,7 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    console.log("PHASE 2");
+    // console.log("PHASE 2");
     const applications = await prisma.jobApplication.findMany({
       where: {
         jobPostId: jobPost.id,

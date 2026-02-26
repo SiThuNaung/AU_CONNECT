@@ -55,7 +55,7 @@ export default function ApplyJobPostModal({
   };
 
   const handleSubmit = async () => {
-    console.log("Submit clicked");
+    // console.log("Submit clicked");
 
     if (!resumeFile) {
       alert("Please upload your resume");
@@ -65,7 +65,7 @@ export default function ApplyJobPostModal({
     setIsSubmitting(true);
 
     try {
-      console.log("Calling onSubmit");
+      // console.log("Calling onSubmit");
 
       await onSubmit({
         resumeFile,
