@@ -12,6 +12,13 @@ import { MyApplicationSection } from "../components/MyApplicationSection";
 import { TRENDING_JOB_SKILLS_API_PATH } from "@/lib/constants";
 import { RECOMMENDED_JOBS_API_PATH } from "@/lib/constants";
 import { useRouter } from "next/navigation";
+import {
+  DEFAULT_JOB_SALARY_CURRENCY,
+  formatJobSalaryAmount,
+  getJobSalaryCurrencyConfig,
+  JobSalaryCurrency,
+} from "@/lib/jobSalary";
+import CurrencyPicker from "../components/CurrencyPicker";
 
 type RecommendedJob = {
   id: string;
@@ -50,8 +57,6 @@ const LOCATION_FILTERS = [
 ];
 
 const SALARY_SLIDER_MIN = 0;
-const SALARY_SLIDER_MAX = 20000;
-const SALARY_STEP = 250;
 
 type TrendingSkill = {
   id: string;
@@ -82,6 +87,9 @@ export default function JobsPage() {
   const [locationTypes, setLocationTypes] = useState<string[]>([]);
   const [salaryMin, setSalaryMin] = useState<number | "">("");
   const [salaryMax, setSalaryMax] = useState<number | "">("");
+  const [salaryCurrency, setSalaryCurrency] = useState<JobSalaryCurrency>(
+    DEFAULT_JOB_SALARY_CURRENCY,
+  );
   const [jobTabFilter, setJobTabFilter] = useState<JobTabFilters>(
     JobTabFilters.ALL,
   );
@@ -93,23 +101,37 @@ export default function JobsPage() {
     salaryMinValue !== undefined || salaryMaxValue !== undefined
       ? `${salaryMinValue ?? ""},${salaryMaxValue ?? ""}`
       : undefined;
+  const salaryConfig = getJobSalaryCurrencyConfig(salaryCurrency);
+  const sliderMax = Math.max(
+    salaryConfig.sliderMax,
+    salaryMinValue ?? 0,
+    salaryMaxValue ?? 0,
+  );
   const sliderMinValue = Math.min(
     salaryMinValue ?? SALARY_SLIDER_MIN,
-    SALARY_SLIDER_MAX,
+    sliderMax,
   );
   const sliderMaxValue = Math.min(
-    salaryMaxValue ?? SALARY_SLIDER_MAX,
-    SALARY_SLIDER_MAX,
+    salaryMaxValue ?? sliderMax,
+    sliderMax,
   );
   const salaryTrackLeft =
     ((sliderMinValue - SALARY_SLIDER_MIN) /
-      (SALARY_SLIDER_MAX - SALARY_SLIDER_MIN)) *
+      (sliderMax - SALARY_SLIDER_MIN)) *
     100;
   const salaryTrackRight =
     100 -
     ((sliderMaxValue - SALARY_SLIDER_MIN) /
-      (SALARY_SLIDER_MAX - SALARY_SLIDER_MIN)) *
+      (sliderMax - SALARY_SLIDER_MIN)) *
       100;
+  const salaryFilterLabel =
+    salaryMinValue !== undefined && salaryMaxValue !== undefined
+      ? `${formatJobSalaryAmount(salaryMinValue, salaryCurrency)} - ${formatJobSalaryAmount(salaryMaxValue, salaryCurrency)}`
+      : salaryMinValue !== undefined
+        ? `${formatJobSalaryAmount(salaryMinValue, salaryCurrency)}+`
+        : salaryMaxValue !== undefined
+          ? `Up to ${formatJobSalaryAmount(salaryMaxValue, salaryCurrency)}`
+          : "Any";
 
   // query to fetch job posts
   const {
@@ -126,6 +148,7 @@ export default function JobsPage() {
     empType: employmentTypes.length ? employmentTypes : undefined,
     locType: locationTypes.length ? locationTypes : undefined,
     salaryRange: salaryRangeParam,
+    salaryCurrency: salaryRangeParam ? salaryCurrency : undefined,
     tab: JOB_TAB_FILTER_TO_PARAM[jobTabFilter],
   });
 
@@ -218,6 +241,7 @@ export default function JobsPage() {
     setLocationTypes([]);
     setSalaryMin("");
     setSalaryMax("");
+    setSalaryCurrency(DEFAULT_JOB_SALARY_CURRENCY);
   };
 
   const updateSalaryMin = (value: number | "") => {
@@ -244,6 +268,12 @@ export default function JobsPage() {
     if (salaryMin !== "" && nextValue < salaryMin) {
       setSalaryMin(nextValue);
     }
+  };
+
+  const updateSalaryCurrency = (currency: JobSalaryCurrency) => {
+    setSalaryCurrency(currency);
+    setSalaryMin("");
+    setSalaryMax("");
   };
 
   const JobRecommendationCard = () => {
@@ -460,19 +490,20 @@ export default function JobsPage() {
               </div>
 
               <div>
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-medium text-zinc-700">Salary (USD/mo)</h3>
-                  <span className="text-sm text-zinc-500">
-                    {salaryMinValue !== undefined ||
-                    salaryMaxValue !== undefined
-                      ? `$${salaryMinValue ?? 0} - ${
-                          salaryMaxValue !== undefined
-                            ? `$${salaryMaxValue}`
-                            : "Any"
-                        }`
-                      : "Any"}
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-medium text-zinc-700">Salary</h3>
+                  <span className="text-right text-sm text-zinc-500">
+                    {salaryFilterLabel}
                   </span>
                 </div>
+                <CurrencyPicker
+                  value={salaryCurrency}
+                  onChange={updateSalaryCurrency}
+                  className="mb-3 w-full"
+                  menuAlign="left"
+                  menuWidth="input"
+                  openAllOnFocus
+                />
                 <div className="space-y-4">
                   <div className="relative h-6">
                     <div className="absolute left-0 right-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-zinc-200" />
@@ -486,8 +517,8 @@ export default function JobsPage() {
                     <input
                       type="range"
                       min={SALARY_SLIDER_MIN}
-                      max={SALARY_SLIDER_MAX}
-                      step={SALARY_STEP}
+                      max={sliderMax}
+                      step={salaryConfig.step}
                       value={sliderMinValue}
                       onChange={(e) => updateSalaryMin(Number(e.target.value))}
                       className="pointer-events-none absolute inset-x-0 top-0 h-6 w-full appearance-none bg-transparent accent-red-500 [&::-webkit-slider-thumb]:pointer-events-auto [&::-moz-range-thumb]:pointer-events-auto"
@@ -495,8 +526,8 @@ export default function JobsPage() {
                     <input
                       type="range"
                       min={SALARY_SLIDER_MIN}
-                      max={SALARY_SLIDER_MAX}
-                      step={SALARY_STEP}
+                      max={sliderMax}
+                      step={salaryConfig.step}
                       value={sliderMaxValue}
                       onChange={(e) => updateSalaryMax(Number(e.target.value))}
                       className="pointer-events-none absolute inset-x-0 top-0 h-6 w-full appearance-none bg-transparent accent-red-500 [&::-webkit-slider-thumb]:pointer-events-auto [&::-moz-range-thumb]:pointer-events-auto"

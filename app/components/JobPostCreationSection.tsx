@@ -4,7 +4,6 @@ import {
   Building2,
   MapPin,
   Briefcase,
-  DollarSign,
   Calendar,
   Globe,
   ExternalLink,
@@ -12,6 +11,8 @@ import {
 import { useMemo } from "react";
 
 import JobDraft from "@/types/JobDraft";
+import { JOB_SALARY_CURRENCIES } from "@/lib/jobSalary";
+import CurrencyPicker from "./CurrencyPicker";
 import SkillSelector from "./SkillSelector";
 
 export default function JobPostCreationSection({
@@ -47,6 +48,9 @@ export default function JobPostCreationSection({
   const update = <K extends keyof JobDraft>(key: K, val: JobDraft[K]) => {
     onChange({ ...value, [key]: val });
   };
+  const salarySymbol =
+    JOB_SALARY_CURRENCIES.find(({ code }) => code === salaryCurrency)?.symbol ??
+    "¤";
 
   return (
     <div className="px-6 py-4 bg-blue-50/30 border-y border-blue-100">
@@ -246,11 +250,15 @@ export default function JobPostCreationSection({
             Salary Range{" "}
             <span className="text-neutral-400">(optional but encouraged)</span>
           </label>
-          <div className="flex items-center gap-3">
-            <div className="flex-1 relative">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+          <div className="flex flex-wrap items-start gap-3">
+            <div className="min-w-28 flex-1 relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">
+                {salarySymbol}
+              </span>
               <input
                 type="number"
+                min={0}
+                step={1}
                 value={salaryMin ?? ""}
                 onChange={(e) =>
                   update(
@@ -259,18 +267,22 @@ export default function JobPostCreationSection({
                   )
                 }
                 placeholder="Min"
-                className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm text-gray-700 outline-none focus:ring-2 transition ${
+                className={`w-full pl-14 pr-4 py-3 border rounded-xl text-sm text-gray-700 outline-none focus:ring-2 transition ${
                   errors.salaryMin
                     ? "border-red-500 focus:ring-red-100"
                     : "border-neutral-200 focus:border-blue-500 focus:ring-blue-100"
                 }`}
               />
             </div>
-            <span className="text-neutral-400 font-semibold">—</span>
-            <div className="flex-1 relative">
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            <span className="self-center text-neutral-400 font-semibold">—</span>
+            <div className="min-w-28 flex-1 relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-neutral-400">
+                {salarySymbol}
+              </span>
               <input
                 type="number"
+                min={0}
+                step={1}
                 value={salaryMax ?? ""}
                 onChange={(e) =>
                   update(
@@ -279,24 +291,19 @@ export default function JobPostCreationSection({
                   )
                 }
                 placeholder="Max"
-                className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm text-gray-700 outline-none focus:ring-2 transition ${
+                className={`w-full pl-14 pr-4 py-3 border rounded-xl text-sm text-gray-700 outline-none focus:ring-2 transition ${
                   errors.salaryMax
                     ? "border-red-500 focus:ring-red-100"
                     : "border-neutral-200 focus:border-blue-500 focus:ring-blue-100"
                 }`}
               />
             </div>
-            <select
-              value={salaryCurrency}
-              onChange={(e) => update("salaryCurrency", e.target.value)}
-              className="cursor-pointer px-4 py-3 border border-neutral-200 rounded-xl text-sm text-gray-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition bg-white"
-            >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
-              <option value="CAD">CAD</option>
-              <option value="AUD">AUD</option>
-            </select>
+            <CurrencyPicker
+              value={salaryCurrency ?? ""}
+              onChange={(currency) => update("salaryCurrency", currency)}
+              className="w-44"
+              error={errors.salaryCurrency}
+            />
           </div>
           {errors.salaryRange && (
             <p className="text-xs text-red-500 mt-1">{errors.salaryRange}</p>

@@ -1,4 +1,9 @@
 import { z } from "zod";
+import { JOB_SALARY_CURRENCIES } from "@/lib/jobSalary";
+
+const jobSalaryCurrencyCodes = JOB_SALARY_CURRENCIES.map(
+  ({ code }) => code,
+) as [string, ...string[]];
 
 const JobSchema = z
   .object({
@@ -14,9 +19,9 @@ const JobSchema = z
     ]),
     positionsAvailable: z.number().min(1).optional(),
     status: z.enum(["OPEN", "CLOSED", "FILLED"]).optional(),
-    salaryMin: z.number().optional(),
-    salaryMax: z.number().optional(),
-    salaryCurrency: z.string().optional(),
+    salaryMin: z.number().int().nonnegative().optional(),
+    salaryMax: z.number().int().nonnegative().optional(),
+    salaryCurrency: z.enum(jobSalaryCurrencyCodes).optional(),
     deadline: z.string().optional(),
     jobDetails: z.string().optional(),
     skillIds: z
@@ -29,6 +34,25 @@ const JobSchema = z
     allowExternalApply: z.boolean(),
     applyUrl: z.string().optional(),
   })
+  .refine(
+    (data) =>
+      (data.salaryMin === undefined && data.salaryMax === undefined) ||
+      data.salaryCurrency !== undefined,
+    {
+      message: "Salary currency is required when a salary is provided",
+      path: ["salaryCurrency"],
+    },
+  )
+  .refine(
+    (data) =>
+      data.salaryMin === undefined ||
+      data.salaryMax === undefined ||
+      data.salaryMin <= data.salaryMax,
+    {
+      message: "Minimum salary cannot exceed maximum salary",
+      path: ["salaryMax"],
+    },
+  )
   .refine(
     (data) =>
       !data.allowExternalApply ||

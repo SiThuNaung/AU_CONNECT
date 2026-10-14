@@ -339,6 +339,7 @@ type FetchJobPostsParams = {
   empType?: string[];
   locType?: string[];
   salaryRange?: string;
+  salaryCurrency?: string;
   tab?: JobTab;
 };
 
@@ -353,6 +354,7 @@ export async function fetchJobPosts({
   empType,
   locType,
   salaryRange,
+  salaryCurrency,
   tab,
 }: FetchJobPostsParams): Promise<JobPostsPage> {
   const params = new URLSearchParams();
@@ -366,6 +368,8 @@ export async function fetchJobPosts({
   if (locType?.length) params.set("locType", locType.join(","));
 
   if (salaryRange) params.set("salaryRange", salaryRange);
+
+  if (salaryCurrency) params.set("salaryCurrency", salaryCurrency);
 
   if (tab && tab !== "all") params.set("tab", tab);
 
@@ -387,6 +391,7 @@ type UseJobPostsParams = {
   empType?: string[];
   locType?: string[];
   salaryRange?: string;
+  salaryCurrency?: string;
   tab?: JobTab;
 };
 
@@ -395,6 +400,7 @@ export function useJobPosts({
   empType,
   locType,
   salaryRange,
+  salaryCurrency,
   tab,
 }: UseJobPostsParams) {
   return useInfiniteQuery<
@@ -404,7 +410,15 @@ export function useJobPosts({
     (string | string[] | undefined)[],
     string | null
   >({
-    queryKey: ["job-posts", keyword, empType, locType, salaryRange, tab],
+    queryKey: [
+      "job-posts",
+      keyword,
+      empType,
+      locType,
+      salaryRange,
+      salaryCurrency,
+      tab,
+    ],
     placeholderData: (previousData) => previousData,
 
     queryFn: ({ pageParam }) =>
@@ -414,6 +428,7 @@ export function useJobPosts({
         empType,
         locType,
         salaryRange,
+        salaryCurrency,
         tab,
       }),
 

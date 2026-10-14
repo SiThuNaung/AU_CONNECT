@@ -10,6 +10,7 @@ import {
   getSkillOptionsFromJobSkills,
 } from "@/lib/jobSkillFunctions";
 import prisma from "@/lib/prisma";
+import { isJobSalaryCurrency } from "@/lib/jobSalary";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
     const empType = req.nextUrl.searchParams.get("empType");
     const locType = req.nextUrl.searchParams.get("locType");
     const salaryRange = req.nextUrl.searchParams.get("salaryRange");
+    const rawSalaryCurrency = req.nextUrl.searchParams.get("salaryCurrency");
     const tab = req.nextUrl.searchParams.get("tab");
 
     // Base conditions inside the jobPost relation
@@ -58,23 +60,63 @@ export async function GET(req: NextRequest) {
     }
 
     if (salaryRange) {
+      const salaryCurrency = rawSalaryCurrency?.trim().toUpperCase();
+
+      if (!salaryCurrency || !isJobSalaryCurrency(salaryCurrency)) {
+        return NextResponse.json(
+          { error: "A supported salary currency is required for salary filters" },
+          { status: 400 },
+        );
+      }
+
       const [rawMin, rawMax] = salaryRange.split(",");
       const salaryMin = rawMin ? Number(rawMin) : undefined;
       const salaryMax = rawMax ? Number(rawMax) : undefined;
 
-      if (salaryMin !== undefined && !Number.isNaN(salaryMin)) {
+      if (
+        (salaryMin === undefined && salaryMax === undefined) ||
+        (salaryMin !== undefined && (!Number.isFinite(salaryMin) || salaryMin < 0)) ||
+        (salaryMax !== undefined && (!Number.isFinite(salaryMax) || salaryMax < 0)) ||
+        (salaryMin !== undefined &&
+          salaryMax !== undefined &&
+          salaryMin > salaryMax)
+      ) {
+        return NextResponse.json(
+          { error: "Invalid salary range" },
+          { status: 400 },
+        );
+      }
+
+      jobPostConditions.salaryCurrency = salaryCurrency;
+      jobPostAndConditions.push({
+        OR: [{ salaryMin: { not: null } }, { salaryMax: { not: null } }],
+      });
+
+      if (salaryMin !== undefined) {
         jobPostAndConditions.push({
           OR: [
-            { salaryMax: null },
             { salaryMax: { gte: salaryMin } },
-            { salaryMin: { gte: salaryMin } },
+            {
+              AND: [
+                { salaryMax: null },
+                { salaryMin: { not: null } },
+              ],
+            },
           ],
         });
       }
 
-      if (salaryMax !== undefined && !Number.isNaN(salaryMax)) {
+      if (salaryMax !== undefined) {
         jobPostAndConditions.push({
-          OR: [{ salaryMin: null }, { salaryMin: { lte: salaryMax } }],
+          OR: [
+            { salaryMin: { lte: salaryMax } },
+            {
+              AND: [
+                { salaryMin: null },
+                { salaryMax: { not: null } },
+              ],
+            },
+          ],
         });
       }
     }
