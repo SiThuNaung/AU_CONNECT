@@ -16,16 +16,50 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Check if connection exists
     const pair = normalizePair(authUserId, otherUserId);
-    const connection = await prisma.connection.findUnique({
-      where: { userAId_userBId: pair },
-    });
+    const [connection, outgoingRequest, incomingRequest] = await Promise.all([
+      prisma.connection.findUnique({
+        where: { userAId_userBId: pair },
+        select: { id: true },
+      }),
+      prisma.connectionRequest.findFirst({
+        where: {
+          fromUserId: authUserId,
+          toUserId: otherUserId,
+          status: "PENDING",
+        },
+        select: { id: true },
+      }),
+      prisma.connectionRequest.findFirst({
+        where: {
+          fromUserId: otherUserId,
+          toUserId: authUserId,
+          status: "PENDING",
+        },
+        select: { id: true },
+      }),
+    ]);
 
-    return NextResponse.json({
-      isConnected: !!connection,
-      userId: otherUserId,
-    });
+    const status = connection
+      ? "CONNECTED"
+      : outgoingRequest
+        ? "OUTGOING_PENDING"
+        : incomingRequest
+          ? "INCOMING_PENDING"
+          : "NONE";
+
+    const requestId = outgoingRequest?.id ?? incomingRequest?.id ?? null;
+
+    return NextResponse.json(
+      {
+        status,
+        requestId,
+        // Keep this field for callers that still use the old response shape.
+        isConnected: status === "CONNECTED",
+        userId: otherUserId,
+      },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Server error";
     return NextResponse.json({ error: message }, { status: 500 });

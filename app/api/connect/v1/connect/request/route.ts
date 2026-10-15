@@ -47,7 +47,15 @@ export async function POST(req: NextRequest) {
         const alreadyPending = await prisma.connectionRequest.findFirst({
             where: { fromUserId, toUserId, status: "PENDING" },
         });
-        if (alreadyPending) return NextResponse.json({ error: "Request already sent" }, { status: 409 });
+        // Sending the same request again is idempotent. Returning the existing
+        // request lets a client recover if its local relationship state was stale.
+        if (alreadyPending) {
+            return NextResponse.json({
+                ok: true,
+                alreadyPending: true,
+                request: alreadyPending,
+            });
+        }
 
         const created = await prisma.connectionRequest.create({
             data: { fromUserId, toUserId, status: "PENDING" },

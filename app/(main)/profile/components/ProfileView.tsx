@@ -48,13 +48,24 @@ type ConnectionUser = {
   profilePic?: string;
 };
 
-type ConnectionRequest = {
-  id: string;
-  toUserId?: string;
-  fromUserId?: string;
-  toUser?: { id?: string };
-  fromUser?: { id?: string };
-};
+type LoadedRelationshipStatus =
+  | "NONE"
+  | "CONNECTED"
+  | "OUTGOING_PENDING"
+  | "INCOMING_PENDING";
+
+type RelationshipStatus = LoadedRelationshipStatus | "LOADING" | "ERROR";
+
+function isLoadedRelationshipStatus(
+  value: unknown,
+): value is LoadedRelationshipStatus {
+  return (
+    value === "NONE" ||
+    value === "CONNECTED" ||
+    value === "OUTGOING_PENDING" ||
+    value === "INCOMING_PENDING"
+  );
+}
 
 const VERIFICATION_ROLE_LABEL: Record<string, string> = {
   STUDENT: "Verified Student",
@@ -184,13 +195,15 @@ export default function ProfileView({
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
 
-  const [connectSuccess, setConnectSuccess] = useState(false); // "Requested"
   const [requestId, setRequestId] = useState<string | null>(null); // Store request ID for canceling
   const [incomingRequestId, setIncomingRequestId] = useState<string | null>(
     null,
   ); // ✅ NEW: for accept/decline
   const [openRemoveModal, setOpenRemoveModal] = useState(false);
-  const [isConnected, setIsConnected] = useState(false); // Track if already connected
+  const [relationshipStatus, setRelationshipStatus] =
+    useState<RelationshipStatus>("LOADING");
+  const [connectionStatusRefreshKey, setConnectionStatusRefreshKey] =
+    useState(0);
 
   const router = useRouter();
 
@@ -308,85 +321,57 @@ export default function ProfileView({
     }
   };
 
-  // ✅ UPDATED: On profile load: check connection status (connected / outgoing / incoming)
+  // Load the complete relationship state before enabling any relationship action.
   useEffect(() => {
     if (isOwner || !isUserActor) return;
 
     let ignore = false;
 
     async function loadConnectionStatus() {
+      setRelationshipStatus("LOADING");
+      setConnectError(null);
+
       try {
-        // 1) connected?
-        const connectionsRes = await fetch(
-          BASE_API_PATH + "/connect/status?otherUserId=" + user.id,
-          { credentials: "include" },
+        const response = await fetch(
+          BASE_API_PATH +
+            "/connect/status?otherUserId=" +
+            encodeURIComponent(user.id),
+          { credentials: "include", cache: "no-store" },
         );
-
-        if (connectionsRes.ok) {
-          const connectionsJson = await connectionsRes.json();
-          if (!ignore && connectionsJson.isConnected) {
-            setIsConnected(true);
-            // cleanup other states
-            setConnectSuccess(false);
-            setRequestId(null);
-            setIncomingRequestId(null);
-            return;
-          }
+        const json = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(json?.error || "Failed to load connection status");
         }
 
-        // 2) outgoing request?
-        const outgoingRes = await fetch(
-          BASE_API_PATH + "/connect/requests?type=outgoing",
-          { credentials: "include" },
+        if (ignore) return;
+
+        const status: unknown = json.status;
+        if (!isLoadedRelationshipStatus(status)) {
+          throw new Error("Invalid connection status response");
+        }
+        if (
+          (status === "OUTGOING_PENDING" ||
+            status === "INCOMING_PENDING") &&
+          typeof json.requestId !== "string"
+        ) {
+          throw new Error("Connection request ID is missing");
+        }
+
+        setRelationshipStatus(status);
+        setRequestId(status === "OUTGOING_PENDING" ? json.requestId : null);
+        setIncomingRequestId(
+          status === "INCOMING_PENDING" ? json.requestId : null,
         );
-        if (outgoingRes.ok) {
-          const outgoingJson = await outgoingRes.json();
-          const outgoing = (outgoingJson.data || []) as ConnectionRequest[];
-
-          const existingOutgoing = outgoing.find(
-            (r) => r.toUserId === user.id || r.toUser?.id === user.id,
-          );
-
-          if (!ignore && existingOutgoing) {
-            setIsConnected(false);
-            setConnectSuccess(true);
-            setRequestId(existingOutgoing.id);
-            setIncomingRequestId(null);
-            return; // important
-          }
-        }
-
-        // 3) incoming request?
-        const incomingRes = await fetch(
-          BASE_API_PATH + "/connect/requests?type=incoming",
-          { credentials: "include" },
+      } catch (error: unknown) {
+        if (ignore) return;
+        setRelationshipStatus("ERROR");
+        setRequestId(null);
+        setIncomingRequestId(null);
+        setConnectError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load connection status",
         );
-        if (incomingRes.ok) {
-          const incomingJson = await incomingRes.json();
-          const incoming = (incomingJson.data || []) as ConnectionRequest[];
-
-          const existingIncoming = incoming.find(
-            (r) => r.fromUserId === user.id || r.fromUser?.id === user.id,
-          );
-
-          if (!ignore && existingIncoming) {
-            setIsConnected(false);
-            setConnectSuccess(false);
-            setRequestId(null);
-            setIncomingRequestId(existingIncoming.id);
-            return;
-          }
-        }
-
-        // 4) none
-        if (!ignore) {
-          setIsConnected(false);
-          setConnectSuccess(false);
-          setRequestId(null);
-          setIncomingRequestId(null);
-        }
-      } catch {
-        // ignore silently
       }
     }
 
@@ -395,7 +380,7 @@ export default function ProfileView({
     return () => {
       ignore = true;
     };
-  }, [isOwner, isUserActor, user.id]);
+  }, [connectionStatusRefreshKey, isOwner, isUserActor, user.id]);
 
   const loadConnections = useCallback(async () => {
     try {
@@ -445,16 +430,17 @@ export default function ProfileView({
           setVerificationModalOpen(true);
           return;
         }
-        const msg = json?.error || "Failed to send connection request";
-        if (msg.toLowerCase().includes("already")) setConnectSuccess(true);
-        throw new Error(msg);
+        throw new Error(json?.error || "Failed to send connection request");
       }
 
-      // success => Requested & store the request ID
-      setConnectSuccess(true);
-      setIncomingRequestId(null); // ✅ make sure UI doesn't show accept/decline
-      if (json.request?.id) {
-        setRequestId(json.request.id);
+      if (json.autoAccepted) {
+        setRelationshipStatus("CONNECTED");
+        setRequestId(null);
+        setIncomingRequestId(null);
+      } else {
+        setRelationshipStatus("OUTGOING_PENDING");
+        setIncomingRequestId(null);
+        setRequestId(json.request?.id ?? null);
       }
     } catch (e: unknown) {
       setConnectError(e instanceof Error ? e.message : "Server error");
@@ -489,7 +475,7 @@ export default function ProfileView({
       }
 
       //  success => reset to initial state
-      setConnectSuccess(false);
+      setRelationshipStatus("NONE");
       setRequestId(null);
     } catch (e: unknown) {
       setConnectError(e instanceof Error ? e.message : "Server error");
@@ -522,7 +508,7 @@ export default function ProfileView({
       }
 
       setIncomingRequestId(null);
-      setIsConnected(true);
+      setRelationshipStatus("CONNECTED");
     } catch (e: unknown) {
       setConnectError(
         e instanceof Error ? e.message : "Failed to accept request",
@@ -547,6 +533,7 @@ export default function ProfileView({
       if (!res.ok) throw new Error("Failed to decline request");
 
       setIncomingRequestId(null);
+      setRelationshipStatus("NONE");
     } catch (e: unknown) {
       setConnectError(
         e instanceof Error ? e.message : "Failed to decline request",
@@ -572,7 +559,7 @@ export default function ProfileView({
         throw new Error(json?.error || "Failed to remove connection");
       }
 
-      setIsConnected(false);
+      setRelationshipStatus("NONE");
     } catch (e: unknown) {
       setConnectError(e instanceof Error ? e.message : "Server error");
     } finally {
@@ -692,7 +679,25 @@ export default function ProfileView({
                           ) : canUsePersonalRelationshipActions ? (
                             <>
                               {/* ✅ UPDATED: Show different UI based on connection state */}
-                              {isConnected ? (
+                              {relationshipStatus === "LOADING" ? (
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="h-9 md:h-10 px-3 md:px-4 rounded-lg text-xs md:text-base border border-gray-300 bg-gray-100 text-gray-500 cursor-wait"
+                                >
+                                  Checking...
+                                </button>
+                              ) : relationshipStatus === "ERROR" ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setConnectionStatusRefreshKey((key) => key + 1)
+                                  }
+                                  className="h-9 md:h-10 px-3 md:px-4 rounded-lg text-xs md:text-base border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                                >
+                                  Retry status
+                                </button>
+                              ) : relationshipStatus === "CONNECTED" ? (
                                 <button
                                   onClick={() => setOpenRemoveModal(true)}
                                   disabled={connectLoading}
@@ -704,7 +709,8 @@ export default function ProfileView({
                                 >
                                   {connectLoading ? "Removing..." : "Remove"}
                                 </button>
-                              ) : incomingRequestId ? (
+                              ) : relationshipStatus === "INCOMING_PENDING" &&
+                                incomingRequestId ? (
                                 <div className="flex flex-wrap gap-2">
                                   <button
                                     onClick={handleAcceptIncoming}
@@ -730,7 +736,7 @@ export default function ProfileView({
                                     Decline
                                   </button>
                                 </div>
-                              ) : connectSuccess ? (
+                              ) : relationshipStatus === "OUTGOING_PENDING" ? (
                                 <div className="flex items-center gap-2">
                                   <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 border border-gray-300">
                                     <span className="text-sm font-medium text-gray-700">
